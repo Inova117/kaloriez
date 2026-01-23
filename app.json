@@ -13,9 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.zerionstudio.caloriecounter",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.zerionstudio.caloriecounter",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +27,21 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "kaloriez"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "eb8404c1-55d1-49a0-823c-5bdd06567cea"
+      }
     }
   }
 }

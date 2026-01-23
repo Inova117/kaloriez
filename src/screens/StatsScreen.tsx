@@ -1,0 +1,185 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
+import { WeeklyChart } from '../components/WeeklyChart';
+import { getLastNDays } from '../utils/dateUtils';
+import { loadEntriesForDateRange } from '../utils/storageUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const GOAL_STORAGE_KEY = '@daily_goal';
+const DEFAULT_GOAL = 2000;
+
+interface StatsScreenProps {
+    onClose: () => void;
+}
+
+interface DailyStat {
+    dayLabel: string;
+    date: Date;
+    calories: number;
+}
+
+export function StatsScreen({ onClose }: StatsScreenProps) {
+    const [weeklyData, setWeeklyData] = useState<DailyStat[]>([]);
+    const [dailyGoal, setDailyGoal] = useState(DEFAULT_GOAL);
+    const [averageCalories, setAverageCalories] = useState(0);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            // Load Goal
+            const storedGoal = await AsyncStorage.getItem(GOAL_STORAGE_KEY);
+            const goal = storedGoal ? parseInt(storedGoal) : DEFAULT_GOAL;
+            setDailyGoal(goal);
+
+            // Load Last 7 Days
+            const days = getLastNDays(new Date(), 7).reverse(); // Get chronological order
+            const entriesMap = await loadEntriesForDateRange(days);
+
+            const stats: DailyStat[] = days.map(date => {
+                const dateKey = date.toISOString().split('T')[0];
+                const entries = entriesMap[dateKey] || []; // Fix: Map key format might differ, checking util
+                // actually loadEntriesForDateRange uses formatDateKey internally so the keys in result are YYYY-MM-DD
+                const totalCalories = entries.reduce((sum, e) => sum + e.calories, 0);
+
+                return {
+                    dayLabel: date.toLocaleDateString('en-US', { weekday: 'narrow' }), // M, T, W
+                    date,
+                    calories: totalCalories
+                };
+            });
+
+            setWeeklyData(stats);
+
+            // Calculate Average
+            const total = stats.reduce((sum, d) => sum + d.calories, 0);
+            setAverageCalories(Math.round(total / stats.length));
+
+        } catch (error) {
+            console.error('Failed to load stats:', error);
+        }
+    };
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Statistics</Text>
+                <Pressable onPress={onClose} style={styles.closeButton}>
+                    <Ionicons name="close-circle" size={28} color={colors.textMuted} />
+                </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.content}>
+                <WeeklyChart data={weeklyData} dailyGoal={dailyGoal} />
+
+                <View style={styles.summaryCard}>
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Daily Average</Text>
+                        <Text style={styles.summaryValue}>{averageCalories}</Text>
+                        <Text style={styles.summaryUnit}>kcal</Text>
+                    </View>
+                    <View style={styles.divider} />
+                    <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Daily Goal</Text>
+                        <Text style={styles.summaryValue}>{dailyGoal}</Text>
+                        <Text style={styles.summaryUnit}>kcal</Text>
+                    </View>
+                </View>
+
+                {/* Insight Card - Quick mocked insight */}
+                <View style={[styles.summaryCard, styles.insightCard]}>
+                    <Ionicons name="bulb-outline" size={24} color={colors.amber} style={{ marginBottom: 8 }} />
+                    <Text style={styles.insightText}>
+                        {averageCalories > dailyGoal
+                            ? "You're slightly above your weekly target. Try adjusting your dinner portions."
+                            : "Great job! You're consistently hitting your calorie goals this week."}
+                    </Text>
+                </View>
+
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: colors.textPrimary,
+        letterSpacing: -0.5,
+    },
+    closeButton: {
+        padding: 4,
+    },
+    content: {
+        paddingBottom: 40,
+    },
+    summaryCard: {
+        flexDirection: 'row',
+        backgroundColor: colors.cardBackground,
+        marginHorizontal: 16,
+        marginTop: 16,
+        padding: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+    },
+    summaryItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    divider: {
+        width: 1,
+        backgroundColor: colors.ghostBorder,
+        marginHorizontal: 16,
+    },
+    summaryLabel: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        fontWeight: '600',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    summaryValue: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: colors.textPrimary,
+        letterSpacing: -1,
+    },
+    summaryUnit: {
+        fontSize: 12,
+        color: colors.textMuted,
+        fontWeight: '500',
+    },
+    insightCard: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+    },
+    insightText: {
+        fontSize: 15,
+        color: colors.textSecondary,
+        lineHeight: 22,
+    }
+});
