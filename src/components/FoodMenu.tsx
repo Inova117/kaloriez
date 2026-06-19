@@ -187,17 +187,11 @@ const styles = StyleSheet.create({
     },
     menu: {
         backgroundColor: colors.cardBackground,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
-        borderTopWidth: 1,
-        borderTopColor: colors.cardBorder,
-        shadowColor: 'rgba(0,0,0,0.1)',
-        shadowOffset: { width: 0, height: -2 },
-        shadowRadius: 8,
-        elevation: 10,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.1)',
+        elevation: 16,
     },
     menuTitle: {
         ...typography.foodName,
@@ -223,7 +217,7 @@ const styles = StyleSheet.create({
         color: colors.error,
     },
     cancelText: {
-        fontWeight: '600',
+        fontWeight: '400',
     },
     sectionDivider: {
         paddingVertical: 12,

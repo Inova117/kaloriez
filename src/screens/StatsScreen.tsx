@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { WeeklyChart } from '../components/WeeklyChart';
-import { getLastNDays } from '../utils/dateUtils';
+import { WeightTracker } from '../components/WeightTracker';
+import { getLastNDays, formatDateKey } from '../utils/dateUtils';
 import { loadEntriesForDateRange } from '../utils/storageUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -43,7 +44,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
             const entriesMap = await loadEntriesForDateRange(days);
 
             const stats: DailyStat[] = days.map(date => {
-                const dateKey = date.toISOString().split('T')[0];
+                const dateKey = formatDateKey(date);
                 const entries = entriesMap[dateKey] || []; // Fix: Map key format might differ, checking util
                 // actually loadEntriesForDateRange uses formatDateKey internally so the keys in result are YYYY-MM-DD
                 const totalCalories = entries.reduce((sum, e) => sum + e.calories, 0);
@@ -76,6 +77,8 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
+                <WeightTracker />
+                
                 <WeeklyChart data={weeklyData} dailyGoal={dailyGoal} />
 
                 <View style={styles.summaryCard}>
@@ -94,7 +97,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
 
                 {/* Insight Card - Quick mocked insight */}
                 <View style={[styles.summaryCard, styles.insightCard]}>
-                    <Ionicons name="bulb-outline" size={24} color={colors.amber} style={{ marginBottom: 8 }} />
+                    <Ionicons name="bulb-outline" size={24} color={colors.accent} style={{ marginBottom: 8 }} />
                     <Text style={styles.insightText}>
                         {averageCalories > dailyGoal
                             ? "You're slightly above your weekly target. Try adjusting your dinner portions."
@@ -136,14 +139,11 @@ const styles = StyleSheet.create({
         backgroundColor: colors.cardBackground,
         marginHorizontal: 16,
         marginTop: 16,
-        padding: 20,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colors.cardBorder,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
+        padding: 24,
+        borderRadius: 16,
+        marginBottom: 20,
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.03)',
+        elevation: 2,
     },
     summaryItem: {
         flex: 1,
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     summaryLabel: {
         fontSize: 12,
         color: colors.textSecondary,
-        fontWeight: '600',
+        fontWeight: '400',
         marginBottom: 4,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     summaryUnit: {
         fontSize: 12,
         color: colors.textMuted,
-        fontWeight: '500',
+        fontWeight: '400',
     },
     insightCard: {
         flexDirection: 'column',

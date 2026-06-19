@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Alert, Modal } from 'react-native';
+import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Header } from '../components/Header';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { FoodEntryCard } from '../components/FoodEntryCard';
+import { MealSection } from '../components/MealSection';
 import { InputBar } from '../components/InputBar';
 import { FoodMenu } from '../components/FoodMenu';
 import { EditFoodModal } from '../components/EditFoodModal';
@@ -37,8 +38,46 @@ export function TodayScreen() {
     const [dailyGoal, setDailyGoal] = useState(DEFAULT_GOAL);
     const [hasReachedGoal, setHasReachedGoal] = useState(false);
     const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set());
+    const [expandedSections, setExpandedSections] = useState<Set<MealType>>(new Set(['breakfast', 'lunch', 'dinner', 'snacks']));
+    const [focusTrigger, setFocusTrigger] = useState(0);
 
     const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
+
+    // Group entries by meal type
+    const entriesByMeal = useMemo(() => {
+        const grouped: Record<MealType, FoodEntry[]> = {
+            breakfast: [],
+            lunch: [],
+            dinner: [],
+            snacks: [],
+        };
+        entries.forEach(entry => {
+            const mealType = entry.mealType || 'snacks';
+            grouped[mealType].push(entry);
+        });
+        return grouped;
+    }, [entries]);
+
+    const toggleSection = (mealType: MealType) => {
+        setExpandedSections(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(mealType)) {
+                newSet.delete(mealType);
+            } else {
+                newSet.add(mealType);
+            }
+            return newSet;
+        });
+    };
+
+    const handleAddToMeal = (mealType: MealType) => {
+        // Expand the section if collapsed
+        if (!expandedSections.has(mealType)) {
+            setExpandedSections(prev => new Set([...prev, mealType]));
+        }
+        // Trigger focus on InputBar
+        setFocusTrigger(prev => prev + 1);
+    };
 
     // Generate quick add items from favorites
     const quickAddItems = useMemo<QuickAddItem[]>(() => {
@@ -72,11 +111,17 @@ export function TodayScreen() {
 
     // Save and update days with data
     useEffect(() => {
-        if (entries.length >= 0) {
-            saveEntriesForDate(currentDate, entries).then(() => {
+        let isMounted = true;
+        
+        saveEntriesForDate(currentDate, entries).then(() => {
+            if (isMounted) {
                 loadDaysWithData();
-            });
-        }
+            }
+        });
+
+        return () => {
+            isMounted = false;
+        };
     }, [entries, currentDate]);
 
     useEffect(() => {
@@ -89,9 +134,14 @@ export function TodayScreen() {
     }, [totalCalories, dailyGoal, hasReachedGoal, currentDate]);
 
     const loadEntriesForCurrentDate = async () => {
-        const loaded = await loadEntriesForDate(currentDate);
-        setEntries(loaded);
-        setHasReachedGoal(false);
+        try {
+            const loaded = await loadEntriesForDate(currentDate);
+            setEntries(loaded);
+            setHasReachedGoal(false);
+        } catch (error) {
+            console.error('Failed to load entries:', error);
+            setEntries([]);
+        }
     };
 
     const loadDaysWithData = async () => {
@@ -124,17 +174,25 @@ export function TodayScreen() {
         if (Platform.OS === 'ios') {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        Alert.alert('Goal Reached! 🎯', `You've reached your daily goal of ${dailyGoal} kcal!`);
+        Alert.alert('Goal Reached', `You've reached your daily goal of ${dailyGoal} kcal!`);
     };
 
     const handleAddEntry = useCallback(async (text: string) => {
         setProcessingState('processing');
         try {
-            const calories = await detectCalories(text);
+            // Sanitize input: trim whitespace and limit length
+            const sanitizedText = text.trim().substring(0, 200);
+            
+            if (!sanitizedText) {
+                setProcessingState('idle');
+                return;
+            }
+            
+            const calories = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: Date.now().toString(),
-                name: text,
+                name: sanitizedText,
                 calories,
                 isFavorite: false,
                 timestamp: currentDate,
@@ -150,17 +208,21 @@ export function TodayScreen() {
     }, [currentDate]);
 
     const handleQuickAdd = useCallback(async (item: QuickAddItem) => {
-        const mealType = getMealTypeFromTime();
-        const newEntry: FoodEntry = {
-            id: Date.now().toString(),
-            name: item.name,
-            calories: item.calories,
-            isFavorite: false,
-            timestamp: currentDate,
-            mealType,
-        };
-        setEntries(prev => [newEntry, ...prev]);
-        if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        try {
+            const mealType = getMealTypeFromTime();
+            const newEntry: FoodEntry = {
+                id: Date.now().toString(),
+                name: item.name,
+                calories: item.calories,
+                isFavorite: false,
+                timestamp: currentDate,
+                mealType,
+            };
+            setEntries(prev => [newEntry, ...prev]);
+            if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch (error) {
+            console.error('Failed to add quick item:', error);
+        }
     }, [currentDate]);
 
     const handleCardPress = useCallback((entry: FoodEntry) => {
@@ -180,8 +242,14 @@ export function TodayScreen() {
 
     const handleSaveEdit = async (newName: string) => {
         if (selectedEntry && newName) {
-            const calories = await detectCalories(newName);
-            setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, name: newName.trim(), calories } : e));
+            try {
+                const calories = await detectCalories(newName);
+                setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, name: newName.trim(), calories } : e));
+            } catch (error) {
+                console.error('Failed to detect calories:', error);
+                // Keep original calories if detection fails
+                setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, name: newName.trim() } : e));
+            }
         }
     };
 
@@ -213,15 +281,6 @@ export function TodayScreen() {
     const handleDateChange = (newDate: Date) => setCurrentDate(newDate);
     const handleDateSelect = (date: Date) => setCurrentDate(date);
 
-    const renderEntry = useCallback(({ item, index }: { item: FoodEntry; index: number }) => (
-        <FoodEntryCard
-            entry={item}
-            index={index}
-            onPress={handleCardPress}
-            onLongPress={handleCardLongPress}
-        />
-    ), [handleCardPress]);
-
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <DayNavigator currentDate={currentDate} onDateChange={handleDateChange}>
@@ -246,19 +305,61 @@ export function TodayScreen() {
                             onItemPress={handleQuickAdd}
                         />
 
-                        <FlatList
-                            data={entries}
-                            renderItem={renderEntry}
-                            keyExtractor={(item) => item.id}
-                            contentContainerStyle={entries.length === 0 ? styles.emptyList : styles.listContent}
-                            showsVerticalScrollIndicator={false}
-                            ListEmptyComponent={<EmptyState date={currentDate} />}
-                        />
+                        <View style={styles.mealsContainer}>
+                            <ScrollView
+                                contentContainerStyle={entries.length === 0 ? styles.emptyList : styles.listContent}
+                                showsVerticalScrollIndicator={false}
+                            >
+                            {entries.length === 0 ? (
+                                <EmptyState date={currentDate} />
+                            ) : (
+                                <>
+                                    <MealSection
+                                        mealType="breakfast"
+                                        entries={entriesByMeal.breakfast}
+                                        isExpanded={expandedSections.has('breakfast')}
+                                        onToggleExpand={() => toggleSection('breakfast')}
+                                        onAddToMeal={() => handleAddToMeal('breakfast')}
+                                        onEntryPress={handleCardPress}
+                                        onEntryLongPress={handleCardLongPress}
+                                    />
+                                    <MealSection
+                                        mealType="lunch"
+                                        entries={entriesByMeal.lunch}
+                                        isExpanded={expandedSections.has('lunch')}
+                                        onToggleExpand={() => toggleSection('lunch')}
+                                        onAddToMeal={() => handleAddToMeal('lunch')}
+                                        onEntryPress={handleCardPress}
+                                        onEntryLongPress={handleCardLongPress}
+                                    />
+                                    <MealSection
+                                        mealType="dinner"
+                                        entries={entriesByMeal.dinner}
+                                        isExpanded={expandedSections.has('dinner')}
+                                        onToggleExpand={() => toggleSection('dinner')}
+                                        onAddToMeal={() => handleAddToMeal('dinner')}
+                                        onEntryPress={handleCardPress}
+                                        onEntryLongPress={handleCardLongPress}
+                                    />
+                                    <MealSection
+                                        mealType="snacks"
+                                        entries={entriesByMeal.snacks}
+                                        isExpanded={expandedSections.has('snacks')}
+                                        onToggleExpand={() => toggleSection('snacks')}
+                                        onAddToMeal={() => handleAddToMeal('snacks')}
+                                        onEntryPress={handleCardPress}
+                                        onEntryLongPress={handleCardLongPress}
+                                    />
+                                </>
+                            )}
+                            </ScrollView>
+                        </View>
                     </View>
 
                     <InputBar
                         onSubmit={handleAddEntry}
                         processingState={processingState}
+                        focusTrigger={focusTrigger}
                     />
                 </KeyboardAvoidingView>
             </DayNavigator>
@@ -316,10 +417,16 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+        overflow: 'hidden',
+    },
+    mealsContainer: {
+        flex: 1,
+        marginBottom: 80,
+        overflow: 'hidden',
     },
     listContent: {
         paddingTop: 8,
-        paddingBottom: 100,
+        paddingBottom: 20,
     },
     emptyList: {
         flex: 1,

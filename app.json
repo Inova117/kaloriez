@@ -2,7 +2,7 @@
   "expo": {
     "name": "CalorieCounter",
     "slug": "CalorieCounter",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -30,13 +30,20 @@
     },
     "plugins": [
       [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone to dictate food entries."
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",
           "project": "react-native",
           "organization": "kaloriez"
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "extra": {
       "eas": {

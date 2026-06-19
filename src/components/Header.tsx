@@ -14,6 +14,7 @@ interface HeaderProps {
     onDatePress?: () => void;
     onTodayPress?: () => void;
     onStatsPress?: () => void;
+    onLogoutPress?: () => void;
 }
 
 export function Header({
@@ -23,7 +24,8 @@ export function Header({
     onGoalPress,
     onDatePress,
     onTodayPress,
-    onStatsPress
+    onStatsPress,
+    onLogoutPress
 }: HeaderProps) {
     const dateDisplay = formatDisplayDate(currentDate);
     const isCurrentDay = isToday(currentDate);
@@ -41,18 +43,22 @@ export function Header({
                 )}
 
                 <Pressable onPress={onDatePress} style={styles.dateButton}>
-                    <Text style={styles.label}>
-                        {isCurrentDay ? 'TODAY' : dateDisplay === 'Yesterday' ? 'YESTERDAY' : 'HISTORY'}
-                    </Text>
                     <View style={styles.dateRow}>
                         <Text style={styles.date}>{dateDisplay}</Text>
                         <Ionicons name="chevron-down" size={12} color={colors.textDimmed} style={styles.chevron} />
                     </View>
                 </Pressable>
 
-                <Pressable onPress={onStatsPress} style={styles.statsButton}>
-                    <Ionicons name="stats-chart" size={20} color={colors.textSecondary} />
-                </Pressable>
+                <View style={styles.rightButtons}>
+                    <Pressable onPress={onStatsPress} style={styles.statsButton}>
+                        <Ionicons name="stats-chart" size={20} color={colors.textSecondary} />
+                    </Pressable>
+                    {onLogoutPress && (
+                        <Pressable onPress={onLogoutPress} style={styles.logoutButton}>
+                            <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+                        </Pressable>
+                    )}
+                </View>
             </View>
 
             <View style={styles.caloriesContainer}>
@@ -94,10 +100,19 @@ const styles = StyleSheet.create({
     },
     todayText: {
         fontSize: 13,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.accent,
     },
+    rightButtons: {
+        flexDirection: 'row',
+        gap: 8,
+    },
     statsButton: {
+        padding: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    logoutButton: {
         padding: 8,
         marginRight: -8,
         justifyContent: 'center',
@@ -115,7 +130,7 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 11,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.textSecondary,
         letterSpacing: 1.5,
         marginBottom: 2,
@@ -123,7 +138,7 @@ const styles = StyleSheet.create({
     },
     date: {
         fontSize: 15,
-        fontWeight: '500',
+        fontWeight: '400',
         color: colors.textMuted,
     },
     chevron: {

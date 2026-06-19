@@ -2,25 +2,25 @@ import { StyleSheet, Platform } from 'react-native';
 import { colors } from './colors';
 
 export const typography = StyleSheet.create({
-    // Headers - Premium tracking
+    // Headers - Elegant & Light
     labelSmall: {
-        fontSize: 13,
-        fontWeight: '500',
-        letterSpacing: 1,
+        fontSize: 12,
+        fontWeight: '400',
+        letterSpacing: 1.2,
         color: colors.textMuted,
         textTransform: 'uppercase',
     },
     dateHeader: {
         fontSize: 32,
-        fontWeight: '700',
+        fontWeight: '300',
         color: colors.textPrimary,
-        letterSpacing: -1, // tracking-tight
+        letterSpacing: -0.5,
     },
     calorieCount: {
         fontSize: 48,
-        fontWeight: '600',
+        fontWeight: '300',
         color: colors.textPrimary,
-        letterSpacing: -2,
+        letterSpacing: -1,
         ...Platform.select({
             ios: { fontVariant: ['tabular-nums'] },
             android: { fontFamily: 'monospace' },
@@ -28,22 +28,22 @@ export const typography = StyleSheet.create({
     },
     calorieUnit: {
         fontSize: 18,
-        fontWeight: '400',
+        fontWeight: '300',
         color: colors.textSecondary,
     },
 
-    // Body - Clean and minimal
+    // Body - Light & Refined
     foodName: {
         fontSize: 16,
-        fontWeight: '400',
+        fontWeight: '300',
         color: colors.textPrimary,
-        letterSpacing: -0.2,
+        letterSpacing: 0,
     },
     cardCalories: {
         fontSize: 15,
-        fontWeight: '500',
+        fontWeight: '400',
         color: colors.textSecondary,
-        letterSpacing: 0,
+        letterSpacing: 0.2,
         ...Platform.select({
             ios: { fontVariant: ['tabular-nums'] },
             android: { fontFamily: 'monospace' },
@@ -51,27 +51,27 @@ export const typography = StyleSheet.create({
     },
     cardUnit: {
         fontSize: 13,
-        fontWeight: '400',
+        fontWeight: '300',
         color: colors.textDimmed,
     },
 
     // Ghost Chips
     chipText: {
         fontSize: 14,
-        fontWeight: '400',
+        fontWeight: '300',
         color: colors.textSecondary,
     },
 
     // Input
     inputText: {
         fontSize: 16,
-        fontWeight: '400',
+        fontWeight: '300',
         color: colors.textPrimary,
-        letterSpacing: -0.2,
+        letterSpacing: 0.2,
     },
     placeholder: {
         fontSize: 16,
-        fontWeight: '400',
+        fontWeight: '300',
         color: colors.textDimmed,
     },
 });

@@ -62,10 +62,10 @@ export function MealSection({
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 4,
+        marginBottom: 0,
     },
     entriesContainer: {
-        paddingTop: 4,
+        paddingTop: 2,
     },
     emptyState: {
         paddingVertical: 32,

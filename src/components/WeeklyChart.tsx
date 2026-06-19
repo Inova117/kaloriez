@@ -93,7 +93,7 @@ function Bar({ item, maxCalories, index, isGoalMet }: {
                                 ? colors.accent
                                 : isGoalMet
                                     ? colors.success
-                                    : colors.indigo
+                                    : colors.textSecondary
                         },
                         isCurrentDay && styles.activeBarShadow
                     ]}
@@ -117,14 +117,11 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.cardBackground,
         borderRadius: 24,
-        padding: 20,
+        padding: 24,
         marginHorizontal: 16,
-        marginVertical: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 3,
+        marginBottom: 24,
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+        elevation: 4,
         borderWidth: 1,
         borderColor: colors.cardBorder,
     },
@@ -136,13 +133,13 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '400',
         color: colors.textPrimary,
         letterSpacing: -0.5,
     },
     subtitle: {
         fontSize: 13,
-        fontWeight: '500',
+        fontWeight: '400',
         color: colors.textSecondary,
     },
     chartContainer: {
@@ -165,7 +162,7 @@ const styles = StyleSheet.create({
         top: -16,
         fontSize: 10,
         color: colors.textMuted,
-        fontWeight: '600',
+        fontWeight: '400',
         backgroundColor: colors.cardBackground,
         paddingHorizontal: 4,
     },
@@ -193,20 +190,17 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     activeBarShadow: {
-        shadowColor: colors.accent,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
+        boxShadow: '0px 0px 8px rgba(99, 102, 241, 0.4)',
     },
     dayLabel: {
         marginTop: 8,
         fontSize: 12,
-        fontWeight: '500',
+        fontWeight: '400',
         color: colors.textMuted,
     },
     activeDayLabel: {
         color: colors.accent,
-        fontWeight: '700',
+        fontWeight: '400',
     },
     valueLabel: {
         fontSize: 9,

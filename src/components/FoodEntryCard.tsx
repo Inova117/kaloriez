@@ -51,15 +51,6 @@ export function FoodEntryCard({ entry, index = 0, onPress, onLongPress }: FoodEn
                 delayLongPress={500}
             >
                 <View style={styles.leftSection}>
-                    <Text style={styles.mealEmoji}>{mealConfig.icon}</Text>
-                    {entry.isFavorite && (
-                        <Ionicons
-                            name={entry.isFavorite ? 'star' : 'star-outline'}
-                            size={16}
-                            color={entry.isFavorite ? colors.favorite : colors.textMuted}
-                            style={styles.starIcon}
-                        />
-                    )}
                     <Text style={styles.foodName} numberOfLines={1}>{entry.name}</Text>
                 </View>
 
@@ -75,7 +66,7 @@ export function FoodEntryCard({ entry, index = 0, onPress, onLongPress }: FoodEn
 const styles = StyleSheet.create({
     container: {
         marginHorizontal: 16,
-        marginBottom: 6,
+        marginBottom: 4,
     },
     pressable: {
         flexDirection: 'row',
@@ -83,28 +74,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         backgroundColor: colors.cardBackground,
         borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+        padding: 12,
+        marginBottom: 6,
+        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.04)',
+        elevation: 1,
         borderWidth: 1,
-        borderColor: colors.cardBorder,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
     },
     leftSection: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
         marginRight: 12,
-    },
-    mealEmoji: {
-        fontSize: 16,
-        marginRight: 8,
-    },
-    starIcon: {
-        marginRight: 8,
     },
     foodName: {
         ...typography.foodName,

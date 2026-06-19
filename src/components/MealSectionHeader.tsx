@@ -27,28 +27,29 @@ export function MealSectionHeader({
         <View style={styles.container}>
             <Pressable style={styles.headerContent} onPress={onToggle}>
                 <View style={styles.leftSection}>
-                    <Ionicons
-                        name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-                        size={18}
-                        color={colors.textSecondary}
-                        style={styles.chevron}
-                    />
-                    <Text style={styles.icon}>{config.icon}</Text>
                     <View>
                         <Text style={styles.title}>{config.label}</Text>
-                        <Text style={styles.subtitle}>{itemCount} items</Text>
+                        {itemCount > 0 && (
+                            <Text style={styles.subtitle}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</Text>
+                        )}
                     </View>
                 </View>
 
                 <View style={styles.rightSection}>
-                    <Text style={styles.calories}>{totalCalories}</Text>
-                    <Text style={styles.unit}> kcal</Text>
+                    {totalCalories > 0 && (
+                        <>
+                            <Text style={styles.calories}>{totalCalories}</Text>
+                            <Text style={styles.unit}> cal</Text>
+                        </>
+                    )}
                 </View>
             </Pressable>
 
-            <Pressable style={styles.addButton} onPress={onAddPress}>
-                <Ionicons name="add" size={20} color={colors.textSecondary} />
-            </Pressable>
+            {isExpanded && (
+                <Pressable style={styles.addButton} onPress={onAddPress}>
+                    <Ionicons name="add" size={18} color={colors.textSecondary} />
+                </Pressable>
+            )}
         </View>
     );
 }
@@ -57,10 +58,11 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         backgroundColor: colors.background,
-        marginTop: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.cardBorder,
     },
     headerContent: {
         flex: 1,
@@ -73,42 +75,38 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
-    chevron: {
-        marginRight: 8,
-    },
-    icon: {
-        fontSize: 20,
-        marginRight: 12,
-    },
     title: {
-        fontSize: 17,
-        fontWeight: '600',
+        fontSize: 12,
+        fontWeight: '400',
         color: colors.textPrimary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.8,
     },
     subtitle: {
-        fontSize: 12,
+        fontSize: 10,
         color: colors.textMuted,
-        marginTop: 2,
+        marginTop: 1,
     },
     rightSection: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginRight: 12,
+        marginRight: 8,
     },
     calories: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.textSecondary,
+        fontSize: 13,
+        fontWeight: '400',
+        color: colors.textPrimary,
     },
     unit: {
-        fontSize: 12,
+        fontSize: 10,
         color: colors.textMuted,
+        fontWeight: '400',
     },
     addButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.cardBackground,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: colors.inputBackground,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,

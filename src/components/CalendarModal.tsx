@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     },
     monthTitle: {
         fontSize: 18,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.textPrimary,
     },
     weekDays: {
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 12,
         color: colors.textMuted,
-        fontWeight: '600',
+        fontWeight: '400',
     },
     daysGrid: {
         flexDirection: 'row',
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     },
     selectedDayText: {
         color: colors.textPrimary,
-        fontWeight: '600',
+        fontWeight: '400',
     },
     todayDay: {
         borderWidth: 1,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     },
     closeText: {
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.accent,
     },
 });

@@ -10,6 +10,7 @@ interface FoodMatch {
 const foodDatabase: FoodMatch[] = [
     // Proteins
     { pattern: /chicken|pollo/i, baseCalories: 165, perGram: 1.65 },
+    { pattern: /wings|alitas/i, baseCalories: 290 }, // Chicken wings ~290 cal per 100g
     { pattern: /beef|carne|steak/i, baseCalories: 250, perGram: 2.5 },
     { pattern: /salmon|salmón/i, baseCalories: 208, perGram: 2.08 },
     { pattern: /egg|huevo/i, baseCalories: 78 },
@@ -44,6 +45,13 @@ const foodDatabase: FoodMatch[] = [
     { pattern: /burger|hamburguesa/i, baseCalories: 354 },
     { pattern: /sandwich|sándwich/i, baseCalories: 350 },
     { pattern: /soup|sopa/i, baseCalories: 100 },
+    
+    // Fast food & Sauces
+    { pattern: /kfc|fried chicken/i, baseCalories: 290 },
+    { pattern: /bbq|barbecue/i, baseCalories: 50 }, // BBQ sauce ~50 cal per tbsp
+    { pattern: /honey/i, baseCalories: 64 }, // Honey ~64 cal per tbsp
+    { pattern: /sauce|salsa/i, baseCalories: 40 },
+    { pattern: /fries|papas fritas/i, baseCalories: 312, perGram: 3.12 },
 ];
 
 // Extract quantity from text (e.g., "200g", "2 eggs", "1 cup")
@@ -65,41 +73,67 @@ function extractQuantity(text: string): { quantity: number; unit: string } {
 import { getFoodSuggestions } from '../lib/groq';
 
 export async function detectCalories(input: string): Promise<number> {
+    console.log('🔍 Detecting calories for:', input);
+    
     try {
         // Use real AI to get suggestions
+        console.log('📡 Calling AI API...');
         const suggestions = await getFoodSuggestions(input);
 
-        if (suggestions.length > 0) {
-            // Return calories from the best match
+        if (suggestions && suggestions.length > 0) {
+            console.log('✅ AI returned:', suggestions[0]);
             return suggestions[0].calories;
         }
-
-        // Fallback to local regex if AI fails (keep existing logic as backup)
-        const { quantity, unit } = extractQuantity(input);
-        for (const food of foodDatabase) {
-            if (food.pattern.test(input)) {
-                if (unit === 'g' && food.perGram) {
-                    return Math.round(quantity * food.perGram);
-                }
-                return Math.round(food.baseCalories * quantity);
-            }
-        }
-
-        // Last resort fallback
-        return 0;
+        
+        console.log('⚠️ AI returned no suggestions, using local fallback');
     } catch (error) {
-        console.error('AI Error:', error);
-        return 0;
+        console.error('❌ AI Error:', error);
+        console.log('🔄 Falling back to local database');
     }
+
+    // Fallback to local regex if AI fails
+    const { quantity, unit } = extractQuantity(input);
+    console.log('📊 Extracted quantity:', quantity, unit);
+    
+    for (const food of foodDatabase) {
+        if (food.pattern.test(input)) {
+            let calories = 0;
+            if (unit === 'g' && food.perGram) {
+                calories = Math.round(quantity * food.perGram);
+            } else {
+                calories = Math.round(food.baseCalories * quantity);
+            }
+            console.log('✅ Local match found:', food.pattern, '→', calories, 'cal');
+            return calories;
+        }
+    }
+
+    // Last resort: estimate based on input length and common sense
+    console.warn('⚠️ No match found, using smart estimation');
+    const words = input.toLowerCase().split(/\s+/);
+    const hasNumber = /\d+/.test(input);
+    
+    // If user specified a quantity, assume it's a reasonable food item
+    if (hasNumber && quantity > 1) {
+        const estimatedCalPerItem = 150; // Conservative estimate
+        const estimated = Math.round(estimatedCalPerItem * quantity);
+        console.log('💡 Smart estimate:', estimated, 'cal for', quantity, 'items');
+        return estimated;
+    }
+    
+    // Single item or vague description - use moderate estimate
+    const moderateEstimate = 200;
+    console.log('💡 Default estimate:', moderateEstimate, 'cal');
+    return moderateEstimate;
 }
 
 // Quick add items for the shortcuts bar
 export const defaultQuickAddItems = [
-    { id: '1', emoji: '☕', name: 'Black Coffee', calories: 2 },
-    { id: '2', emoji: '🥚', name: '2 Eggs', calories: 156 },
-    { id: '3', emoji: '🍞', name: 'Toast', calories: 79 },
-    { id: '4', emoji: '🙏', name: 'Prayer', calories: 0 },
-    { id: '5', emoji: '🥗', name: 'Salad', calories: 150 },
-    { id: '6', emoji: '🍌', name: 'Banana', calories: 105 },
-    { id: '7', emoji: '🥛', name: 'Milk', calories: 103 },
+    { id: '1', name: 'Black Coffee', calories: 2 },
+    { id: '2', name: '2 Eggs', calories: 156 },
+    { id: '3', name: 'Toast', calories: 79 },
+    { id: '4', name: 'Prayer', calories: 0 },
+    { id: '5', name: 'Salad', calories: 150 },
+    { id: '6', name: 'Banana', calories: 105 },
+    { id: '7', name: 'Milk', calories: 103 },
 ];

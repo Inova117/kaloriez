@@ -1,22 +1,66 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, TextInput, StyleSheet, Pressable, Keyboard, Animated } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, TextInput, StyleSheet, Pressable, Keyboard, Animated, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { ProcessingState } from '../types';
 
 interface InputBarProps {
     onSubmit: (text: string) => void;
+    onAudioRecorded?: (uri: string) => void;
     processingState: ProcessingState;
+    focusTrigger?: number;
 }
 
-export function InputBar({ onSubmit, processingState }: InputBarProps) {
+export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrigger }: InputBarProps) {
     const [text, setText] = useState('');
+    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
     const inputRef = useRef<TextInput>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    const micScale = useRef(new Animated.Value(1)).current;
     const buttonScale = useRef(new Animated.Value(1)).current;
     const buttonRotation = useRef(new Animated.Value(0)).current;
+    const loadingOpacity = useRef(new Animated.Value(0)).current;
+    const micAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+
+    const isProcessing = processingState === 'processing';
+
+    // Animate loading indicator
+    useEffect(() => {
+        if (isProcessing) {
+            Animated.timing(loadingOpacity, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        } else {
+            Animated.timing(loadingOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [isProcessing]);
+
+    // Focus input when focusTrigger changes
+    useEffect(() => {
+        if (focusTrigger && focusTrigger > 0) {
+            inputRef.current?.focus();
+        }
+    }, [focusTrigger]);
+
+    // Cleanup animations on unmount
+    useEffect(() => {
+        return () => {
+            if (micAnimationRef.current) {
+                micAnimationRef.current.stop();
+            }
+        };
+    }, []);
 
     const handleTextChange = useCallback((newText: string) => {
         setText(newText);
@@ -39,6 +83,79 @@ export function InputBar({ onSubmit, processingState }: InputBarProps) {
         setText('');
     }, [text, onSubmit]);
 
+    const startRecording = async () => {
+        try {
+            const permission = await Audio.requestPermissionsAsync();
+            if (permission.status !== 'granted') {
+                Alert.alert(
+                    'Microphone Permission Required',
+                    'Please enable microphone access in your device settings to use voice input.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+
+            if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+            // Animate mic pulsing
+            micAnimationRef.current = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(micScale, {
+                        toValue: 1.2,
+                        duration: 800,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(micScale, {
+                        toValue: 1,
+                        duration: 800,
+                        useNativeDriver: true,
+                    })
+                ])
+            );
+            micAnimationRef.current.start();
+
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+
+            setRecording(recording);
+            setIsRecording(true);
+        } catch (err) {
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        setIsRecording(false);
+        setRecording(null);
+        if (micAnimationRef.current) {
+            micAnimationRef.current.stop();
+        }
+        micScale.setValue(1);
+
+        if (!recording) return;
+
+        try {
+            await recording.stopAndUnloadAsync();
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+            });
+
+            const uri = recording.getURI();
+            if (uri && onAudioRecorded) {
+                if (Platform.OS === 'ios') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                onAudioRecorded(uri);
+            }
+        } catch (error) {
+            console.error('Failed to stop recording', error);
+        }
+    };
+
     const handleButtonPress = () => {
         Animated.sequence([
             Animated.parallel([
@@ -56,7 +173,6 @@ export function InputBar({ onSubmit, processingState }: InputBarProps) {
         }
     };
 
-    const isProcessing = processingState === 'processing';
     const hasText = text.trim().length > 0;
 
     return (
@@ -87,17 +203,46 @@ export function InputBar({ onSubmit, processingState }: InputBarProps) {
                             ]
                         }}
                     >
-                        <Pressable
-                            style={[styles.sendButton, hasText && styles.sendButtonActive]}
-                            onPress={handleButtonPress}
-                            disabled={isProcessing}
-                        >
-                            <Ionicons
-                                name="arrow-up"
-                                size={18}
-                                color={hasText ? colors.textInverse : colors.textDimmed}
-                            />
-                        </Pressable>
+                        {!hasText && !isRecording ? (
+                            <Pressable
+                                style={styles.micButton}
+                                onPressIn={startRecording}
+                                onPressOut={stopRecording}
+                                disabled={isProcessing}
+                            >
+                                <Ionicons
+                                    name="mic"
+                                    size={20}
+                                    color={colors.textDimmed}
+                                />
+                            </Pressable>
+                        ) : isRecording ? (
+                            <Pressable
+                                style={styles.micButtonActive}
+                                onPressIn={startRecording}
+                                onPressOut={stopRecording}
+                            >
+                                <Animated.View style={{ transform: [{ scale: micScale }] }}>
+                                    <View style={styles.stopSquare} />
+                                </Animated.View>
+                            </Pressable>
+                        ) : isProcessing ? (
+                            <View style={styles.loadingButton}>
+                                <ActivityIndicator size="small" color={colors.accent} />
+                            </View>
+                        ) : (
+                            <Pressable
+                                style={[styles.sendButton, styles.sendButtonActive]}
+                                onPress={handleButtonPress}
+                                disabled={isProcessing}
+                            >
+                                <Ionicons
+                                    name="arrow-up"
+                                    size={18}
+                                    color={colors.textInverse}
+                                />
+                            </Pressable>
+                        )}
                     </Animated.View>
                 </View>
             </View>
@@ -108,15 +253,21 @@ export function InputBar({ onSubmit, processingState }: InputBarProps) {
 const styles = StyleSheet.create({
     floatingContainer: {
         position: 'absolute',
-        bottom: 24,
+        bottom: 16,
         left: 16,
         right: 16,
+        zIndex: 1000,
     },
     container: {
-        borderRadius: 28,
-        backgroundColor: colors.inputBackground,
+        borderRadius: 24,
+        backgroundColor: colors.cardBackground,
         borderWidth: 1,
-        borderColor: colors.ghostBorder,
+        borderColor: colors.cardBorder,
+        shadowColor: colors.textPrimary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        elevation: 8,
     },
     inputWrapper: {
         flexDirection: 'row',
@@ -124,11 +275,12 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         paddingLeft: 20,
         paddingRight: 6,
-        paddingVertical: 6,
+        paddingVertical: 8,
     },
     input: {
         flex: 1,
-        ...typography.inputText,
+        fontSize: 16,
+        color: colors.textPrimary,
         paddingVertical: 10,
     },
     sendButton: {
@@ -140,6 +292,41 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     sendButtonActive: {
-        backgroundColor: colors.accent, // Red send button
+        backgroundColor: colors.accent,
+        shadowColor: colors.accent,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    micButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    micButtonActive: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.accent + '15',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadingButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stopSquare: {
+        width: 12,
+        height: 12,
+        borderRadius: 3,
+        backgroundColor: colors.accent,
     },
 });

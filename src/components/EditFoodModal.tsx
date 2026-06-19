@@ -17,17 +17,19 @@ import { FoodEntry } from '../types';
 interface EditFoodModalProps {
     visible: boolean;
     entry: FoodEntry | null;
-    onSave: (newName: string) => void;
+    onSave: (newName: string, newCalories: number) => void;
     onClose: () => void;
 }
 
 export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModalProps) {
     const [text, setText] = useState('');
+    const [calories, setCalories] = useState('');
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         if (visible && entry) {
             setText(entry.name);
+            setCalories(entry.calories.toString());
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 200,
@@ -43,8 +45,11 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
     }, [visible, entry]);
 
     const handleSave = () => {
-        if (text.trim().length > 0) {
-            onSave(text.trim());
+        const trimmedName = text.trim();
+        const parsedCalories = parseInt(calories);
+        
+        if (trimmedName.length > 0 && parsedCalories > 0) {
+            onSave(trimmedName, parsedCalories);
             onClose();
         }
     };
@@ -80,6 +85,16 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
                             placeholder="Food name"
                             placeholderTextColor={colors.textDimmed}
                             autoFocus
+                            selectionColor={colors.accent}
+                        />
+
+                        <TextInput
+                            style={styles.input}
+                            value={calories}
+                            onChangeText={setCalories}
+                            placeholder="Calories"
+                            placeholderTextColor={colors.textDimmed}
+                            keyboardType="numeric"
                             onSubmitEditing={handleSave}
                             selectionColor={colors.accent}
                         />
@@ -127,7 +142,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.textPrimary,
         textAlign: 'center',
         marginBottom: 16,
@@ -164,7 +179,7 @@ const styles = StyleSheet.create({
     },
     saveText: {
         fontSize: 17,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.accent,
     },
 });

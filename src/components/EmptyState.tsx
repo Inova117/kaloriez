@@ -22,13 +22,13 @@ export function EmptyState({ date }: EmptyStateProps) {
         const hour = new Date().getHours();
 
         if (hour >= 5 && hour < 11) {
-            setGreeting({ title: 'Good Morning 🌅', subtitle: "What's for breakfast?" });
+            setGreeting({ title: 'Good Morning', subtitle: "What's for breakfast?" });
         } else if (hour >= 11 && hour < 15) {
-            setGreeting({ title: 'Lunch Time ☀️', subtitle: "What are you having?" });
+            setGreeting({ title: 'Lunch Time', subtitle: "What are you having?" });
         } else if (hour >= 15 && hour < 22) {
-            setGreeting({ title: 'Dinner Time 🌙', subtitle: "Log your meal" });
+            setGreeting({ title: 'Dinner Time', subtitle: "Log your meal" });
         } else {
-            setGreeting({ title: 'Late Night? 🍿', subtitle: "Any snacks to log?" });
+            setGreeting({ title: 'Late Night?', subtitle: "Any snacks to log?" });
         }
     }, [date]);
 
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     },
     hint: {
         fontSize: 20,
-        fontWeight: '600',
+        fontWeight: '400',
         color: colors.textSecondary,
         marginBottom: 8,
         letterSpacing: -0.5,
