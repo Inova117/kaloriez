@@ -5,22 +5,115 @@
 // automatically by supabase.functions.invoke) and receives validated calorie
 // suggestions.
 //
-// Deploy:
-//   supabase functions deploy food-ai
-// Set secrets (server-side, never in the app):
-//   supabase secrets set GEMINI_API_KEY=... GEMINI_MODEL=gemini-2.5-flash USDA_API_KEY=...
+// Self-contained on purpose (no shared-module imports) so it deploys cleanly via
+// the Dashboard or the CLI.
+//
+// Deploy:  supabase functions deploy food-ai
+// Secrets: supabase secrets set GEMINI_API_KEY=... GEMINI_MODEL=gemini-2.5-flash USDA_API_KEY=...
 //
 // Deno runtime.
-import {
-    corsHeaders,
-    enrichSuggestions,
-    getUser,
-    jsonResponse,
-    stripJsonFences,
-} from "../_shared/nutrition.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+const USDA_API_KEY = Deno.env.get("USDA_API_KEY") ?? "";
+const USDA_BASE_URL = "https://api.nal.usda.gov/fdc/v1";
+
+const MAX_ENTRY_CALORIES = 20000;
+const MAX_KCAL_PER_100G = 902; // above pure fat ⇒ almost certainly a kJ value
+
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+        "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function jsonResponse(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body), {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+}
+
+async function getUser(req: Request): Promise<{ id: string } | null> {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    return { id: user.id };
+}
+
+function toSafeCalories(value: unknown): number | null {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0 || n > MAX_ENTRY_CALORIES) return null;
+    return Math.round(n);
+}
+
+async function usdaCaloriesPer100g(foodName: string): Promise<number | null> {
+    if (!USDA_API_KEY) return null;
+    try {
+        const url =
+            `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(foodName)}` +
+            `&dataType=SR%20Legacy,Foundation,Branded&pageSize=5&api_key=${USDA_API_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const foods = data.foods as any[];
+        if (!foods || foods.length === 0) return null;
+
+        const preferred = foods.find(
+            (f: any) => f.dataType === "Foundation" || f.dataType === "SR Legacy",
+        ) || foods[0];
+        const nutrients = (preferred.foodNutrients as any[]) ?? [];
+
+        // Require unitName === 'KCAL': USDA returns Energy in both kcal and kJ.
+        const energy = nutrients.find((n: any) =>
+            n.nutrientName?.toLowerCase().includes("energy") &&
+            n.unitName?.toUpperCase() === "KCAL"
+        );
+        const kcal = energy?.value ?? 0;
+        if (!kcal || kcal > MAX_KCAL_PER_100G) return null;
+        return kcal;
+    } catch (_e) {
+        return null;
+    }
+}
+
+async function caloriesFromUSDA(foodName: string, portionGrams: number): Promise<number | null> {
+    const per100 = await usdaCaloriesPer100g(foodName);
+    if (per100 == null) return null;
+    return Math.round((per100 / 100) * portionGrams);
+}
+
+async function enrichSuggestions(parsed: any[]): Promise<any[]> {
+    const enriched = await Promise.all((parsed ?? []).map(async (s: any) => {
+        const portionRaw = Number(s?.portionGrams);
+        const portionGrams = Number.isFinite(portionRaw) && portionRaw > 0 ? portionRaw : 100;
+        const usda = await caloriesFromUSDA(String(s?.name ?? ""), portionGrams);
+        const ai = toSafeCalories(s?.calories);
+        const calories = usda ?? ai;
+        if (calories == null) return null;
+        const name = String(s?.name ?? "").trim() || "Food";
+        return {
+            name,
+            calories,
+            verified: usda != null,
+            description: s?.description
+                ? `${s.description}${usda != null ? " (USDA verified)" : " (AI estimate)"}`
+                : undefined,
+        };
+    }));
+    return enriched.filter((e) => e !== null);
+}
+
+function stripJsonFences(text: string): string {
+    return String(text).replace(/```json/g, "").replace(/```/g, "").trim();
+}
 
 const SYSTEM_PROMPT =
     `You are a precise nutrition expert assistant. When analyzing a food or meal:
