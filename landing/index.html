@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kaloriez — la app de calorías simple y rápida, hecha en México</title>
+<meta name="description" content="Ve tu día entero de un vistazo, regístralo en segundos y paga un precio claro. La app de calorías simple y rápida que MyFitnessPal dejó de ser — hecha en México." />
+<meta name="theme-color" content="#FAF8F5" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="es_MX" />
+<meta property="og:title" content="Kaloriez — la app de calorías simple y rápida, hecha en México" />
+<meta property="og:description" content="Tu día completo de un vistazo, registro en segundos y un precio claro sin cargos sorpresa." />
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%237B896F' stroke-width='3' stroke-linecap='round' stroke-dasharray='59 16' transform='rotate(-90 16 16)'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..400;1,9..144,300..400&family=Hanken+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<style>
+  /* ====== Tokens (1:1 con src/theme/colors.ts — "Tactile Sanctuary") ====== */
+  :root {
+    --crema:          #FAF8F5;  /* fondo base, nunca blanco puro */
+    --papel:          #F5F3EF;  /* lienzo del dispositivo / fichas / inputs */
+    --lino:           #EFEBE6;  /* tarjetas de comida */
+    --borde-tarjeta:  rgba(123,137,111,.12);
+    --salvia:         #7B896F;  /* acento ÚNICO: solo trazos/bloques, nunca texto chico */
+    --salvia-profunda:#4C5647;  /* texto-acento accesible (~7:1 sobre crema) */
+    --salvia-cta:     #5F6B58;  /* fondo botón en reposo (crema encima = 5.31:1, AA OK) */
+    --salvia-cta-hov: #4C5647;  /* hover/active del botón (~7:1) */
+    --salvia-claro:   #E8EBE6;  /* chip "est." */
+    --carbon:         #2C3E35;  /* tinta: titular, nombres, cifras (~10.7:1) */
+    --piedra:         #566054;  /* texto secundario (~5–6:1) */
+    --guijarro:       #5E6A5D;  /* labels versalita, totales, microcopy (~5:1) */
+    --verde-suave:    #A8C5A0;  /* solo la palomita "verificado" (forma redundante) */
+
+    /* colores de comida (= colors.ts mealColors) */
+    --meal-desayuno:  #B8A88A;
+    --meal-comida:    #8FA882;
+    --meal-cena:      #7B896F;
+    --meal-snacks:    #A8C5A0;
+
+    /* espaciado: grilla base 8px */
+    --space-1: 8px;  --space-2: 16px; --space-3: 24px; --space-4: 32px;
+    --space-5: 40px; --space-6: 48px; --space-8: 64px; --space-10: 80px;
+
+    /* radios */
+    --r-card: 12px; --r-canvas: 16px; --r-btn: 12px; --r-badge: 4px;
+
+    --measure: 52ch;
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--crema);
+    color: var(--piedra);
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  h1, h2, p { margin: 0; }
+
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--salvia-profunda);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 var(--space-3); }
+
+  /* ============================ Header ============================ */
+  .site-header {
+    border-bottom: 1px solid var(--borde-tarjeta);
+  }
+  .site-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 64px;
+  }
+  .wordmark {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 400;
+    font-size: 20px;
+    letter-spacing: -.2px;
+    color: var(--carbon);
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .wordmark .glyph { width: 18px; height: 18px; display: inline-block; }
+  .header-link {
+    display: inline-flex; align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+    color: var(--salvia-profunda);
+    text-decoration: none;
+    padding: 10px;
+    margin-right: -10px;
+  }
+  .header-link:hover { text-decoration: underline; }
+
+  /* ============================ Hero ============================ */
+  .hero .wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+    align-items: center;
+  }
+  @media (min-width: 920px) {
+    .hero .wrap {
+      grid-template-columns: 38fr 62fr;
+      gap: var(--space-8);
+    }
+  }
+
+  .hero-copy { max-width: var(--measure); }
+
+  .eyebrow {
+    font-size: 13px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--guijarro);
+    margin-bottom: var(--space-2);
+  }
+
+  h1.headline {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 300;
+    font-size: clamp(33px, 4.6vw, 40px);
+    line-height: 1.05;
+    letter-spacing: -.5px;
+    color: var(--carbon);
+    margin-bottom: var(--space-3);
+  }
+  h1.headline .accent { color: var(--salvia-profunda); }
+
+  .subhead {
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--piedra);
+    margin-bottom: var(--space-4);
+    max-width: 46ch;
+  }
+
+  .bullets { list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+  .bullets li { padding: var(--space-2) 0; border-top: 1px solid var(--borde-tarjeta); }
+  .bullets li:first-child { border-top: 0; padding-top: 0; }
+  .bullet-title {
+    display: block;
+    font-size: 19px; font-weight: 500;
+    color: var(--carbon);
+    margin-bottom: 4px;
+    letter-spacing: -.1px;
+  }
+  .bullet-body { font-size: 16px; color: var(--piedra); max-width: 44ch; }
+
+  /* ============================ CTA ============================ */
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 14px 26px;
+    background: var(--salvia-cta);
+    color: var(--crema);
+    font-family: "Hanken Grotesk", sans-serif;
+    font-weight: 500; font-size: 16px;
+    text-decoration: none;
+    border: 0; border-radius: var(--r-btn);
+    cursor: pointer;
+    transition: background 160ms var(--ease), transform 160ms var(--ease);
+  }
+  .cta .price { font-variant-numeric: tabular-nums; }
+  .cta:hover { background: var(--salvia-cta-hov); transform: translateY(-1px); }
+  .cta:active { transform: translateY(0); }
+
+  .cta-note {
+    margin-top: var(--space-2);
+    font-size: 13px;
+    color: var(--guijarro);
+    max-width: 40ch;
+  }
+
+  /* ===================== Firma: réplica del día ===================== */
+  .hero-proof { display: flex; justify-content: center; }
+
+  .day-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--papel);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: var(--r-canvas);
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 24px 48px -24px rgba(44,62,53,.18);
+    padding: 20px;
+  }
+
+  .day-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--space-2);
+  }
+  .day-date {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 15px; color: var(--guijarro);
+  }
+  .day-date svg { width: 12px; height: 12px; opacity: .7; }
+  .day-icons { display: inline-flex; gap: 10px; color: var(--guijarro); }
+  .day-icons svg { width: 18px; height: 18px; }
+
+  .ring-wrap {
+    position: relative;
+    width: 168px; height: 168px;
+    margin: var(--space-1) auto var(--space-3);
+  }
+  .ring { width: 100%; height: 100%; display: block; }
+  .ring-track { fill: none; stroke: var(--borde-tarjeta); stroke-width: 8; }
+  .ring-progress {
+    fill: none; stroke: var(--salvia); stroke-width: 8; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: 50% 50%;
+    stroke-dasharray: 289.03;
+    stroke-dashoffset: 109.83; /* estado final (62%) — funciona sin JS */
+  }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .ring-count {
+    font-weight: 300;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: -1.5px;
+    color: var(--carbon);
+  }
+  .ring-goal { font-size: 13px; color: var(--guijarro); margin-top: 4px; }
+
+  /* secciones de comida — todas expandidas */
+  .meal { margin-top: 2px; }
+  .meal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--space-1) 2px;
+    border-bottom: 1px solid var(--borde-tarjeta);
+  }
+  .meal-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: .8px;
+    color: var(--carbon);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
+  .meal-total { font-size: 13px; color: var(--guijarro); }
+  .meal-total .unit { font-size: 10px; }
+
+  .food-list { padding-top: 6px; }
+  .food-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--lino);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: var(--r-card);
+    padding: 12px;
+    margin-bottom: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .food-name {
+    font-size: 16px; font-weight: 300; color: var(--carbon);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .food-right { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .food-kcal { font-size: 15px; font-weight: 400; color: var(--piedra); }
+  .food-unit { font-size: 13px; font-weight: 300; color: var(--guijarro); }
+  .check { width: 13px; height: 13px; color: var(--verde-suave); }
+  .badge {
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: .3px;
+    color: var(--guijarro);
+    background: var(--salvia-claro);
+    border-radius: var(--r-badge);
+    padding: 1px 5px;
+  }
+
+  /* ===================== Tira de prueba ===================== */
+  .proof-strip {
+    border-top: 1px solid var(--borde-tarjeta);
+    border-bottom: 1px solid var(--borde-tarjeta);
+  }
+  .proof-strip p {
+    text-align: center;
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--guijarro);
+    padding: var(--space-3) var(--space-3);
+  }
+  .proof-strip .sep { color: var(--salvia); margin: 0 10px; }
+
+  /* ===================== Cierre / ficha de apartado ===================== */
+  .closing .wrap {
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-10);
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  h2.closing-line {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 300;
+    font-size: clamp(26px, 3.4vw, 33px);
+    line-height: 1.15;
+    letter-spacing: -.4px;
+    color: var(--carbon);
+    max-width: 22ch;
+    margin-bottom: var(--space-5);
+  }
+
+  .ticket {
+    width: 100%; max-width: 440px;
+    background: var(--papel);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: var(--r-canvas);
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 24px 48px -28px rgba(44,62,53,.16);
+    padding: var(--space-4) var(--space-3);
+    text-align: left;
+  }
+  .ticket-eyebrow {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--guijarro);
+    margin-bottom: var(--space-2);
+  }
+  .ticket-price {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: var(--space-1);
+  }
+  .ticket-amount {
+    font-family: "Hanken Grotesk", sans-serif;
+    font-weight: 300; font-size: 44px; letter-spacing: -1.5px;
+    color: var(--carbon);
+  }
+  .ticket-term { font-size: 15px; color: var(--guijarro); }
+  .ticket-fine {
+    font-size: 14px; color: var(--piedra); line-height: 1.5;
+    padding: var(--space-2) 0 var(--space-3);
+    border-bottom: 1px solid var(--borde-tarjeta);
+    margin-bottom: var(--space-3);
+  }
+  .ticket .cta { width: 100%; }
+  .ticket-secure {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    margin-top: var(--space-2);
+    font-size: 13px; color: var(--guijarro);
+  }
+  .ticket-secure svg { width: 13px; height: 13px; }
+
+  /* ============================ Footer ============================ */
+  .site-footer { border-top: 1px solid var(--borde-tarjeta); }
+  .site-footer .wrap {
+    padding: var(--space-4) var(--space-3);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px var(--space-2);
+    font-size: 13px; color: var(--guijarro);
+  }
+  .site-footer a {
+    display: inline-flex; align-items: center; min-height: 44px;
+    padding: 4px 2px;
+    color: var(--guijarro); text-decoration: none;
+  }
+  .site-footer a:hover { text-decoration: underline; }
+  .footer-sep { opacity: .5; }
+
+  /* ============================ Móvil: producto primero ============================ */
+  @media (max-width: 919px) {
+    .hero .wrap { padding-top: var(--space-5); }
+    .hero-proof { order: -1; }       /* la réplica manda */
+    .hero-copy { max-width: none; }
+    .ring-wrap { width: 156px; height: 156px; }
+  }
+
+  /* ============================ Movimiento ============================ */
+  @media (prefers-reduced-motion: no-preference) {
+    .day-card { animation: float 6s ease-in-out infinite; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    /* estado inicial solo cuando JS arma la animación */
+    .day-card.js-anim .ring-progress {
+      stroke-dashoffset: 289.03;
+      transition: stroke-dashoffset 900ms var(--ease);
+    }
+    .day-card.js-anim.in .ring-progress { stroke-dashoffset: 109.83; }
+
+    .day-card.js-anim .food-row { opacity: 0; transform: translateY(8px); }
+    .day-card.js-anim.in .food-row {
+      opacity: 1; transform: translateY(0);
+      transition: opacity 220ms ease, transform 220ms ease;
+      transition-delay: calc(var(--i, 0) * 50ms + 360ms);
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    :root { --borde-tarjeta: rgba(76,86,71,.45); }
+    .food-row, .day-card, .ticket { border-color: var(--salvia-profunda); }
+  }
+</style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="wordmark" href="#">
+        <svg class="glyph" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="12" fill="none" stroke="#7B896F" stroke-width="3"
+                  stroke-linecap="round" stroke-dasharray="59 16" transform="rotate(-90 16 16)"/>
+        </svg>
+        Kaloriez
+      </a>
+      <a class="header-link" href="#apartar">Acceso fundador</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============================ HERO ============================ -->
+    <section class="hero" aria-labelledby="headline">
+      <div class="wrap">
+        <div class="hero-copy">
+          <p class="eyebrow">Conteo de calorías, hecho simple</p>
+          <h1 class="headline" id="headline">
+            La app de calorías simple y rápida que MyFitnessPal dejó de ser
+            <span class="accent">— hecha en México.</span>
+          </h1>
+          <p class="subhead">
+            Ve tu día entero de un vistazo, regístralo en segundos y paga un precio
+            claro. Nada de menús que se cierran ni cargos sorpresa.
+          </p>
+
+          <ul class="bullets">
+            <li>
+              <span class="bullet-title">De un vistazo, sin mil clics</span>
+              <span class="bullet-body">Tu día completo abierto en una pantalla:
+                desayuno, comida, cena y snacks, con sus totales a la vista. Nada que desplegar.</span>
+            </li>
+            <li>
+              <span class="bullet-title">Registras en segundos</span>
+              <span class="bullet-body">Anota lo que comiste escribiéndolo normal,
+                dictándolo o con un toque. Es un momento, no una tarea.</span>
+            </li>
+            <li>
+              <span class="bullet-title">Sin cargos sorpresa, cancelas cuando quieras</span>
+              <span class="bullet-body">Precio claro, sin renovación escondida.
+                Cancelas en un toque, sin laberintos.</span>
+            </li>
+          </ul>
+
+          <a class="cta" data-checkout href="#apartar">
+            Aparta tu acceso fundador — <span class="price">$20 USD</span> el primer año
+          </a>
+          <p class="cta-note">Suscripción anual. Tu primer año cuesta $20 USD; después se
+            renueva al precio normal. Te avisamos antes de cada cargo y cancelas cuando quieras.</p>
+        </div>
+
+        <!-- ===== LA FIRMA: réplica viva de "el día de un vistazo" ===== -->
+        <div class="hero-proof">
+          <article class="day-card" id="day" aria-label="Ejemplo de un día completo en Kaloriez">
+            <div class="day-top">
+              <span class="day-date">
+                dom · 22 jun
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="day-icons" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </span>
+            </div>
+
+            <div class="ring-wrap">
+              <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="ring-track" cx="50" cy="50" r="46"/>
+                <circle class="ring-progress" cx="50" cy="50" r="46"/>
+              </svg>
+              <div class="ring-center">
+                <span class="ring-count num" data-count-to="1240">1,240</span>
+                <span class="ring-goal num">de 2,000 kcal</span>
+              </div>
+            </div>
+
+            <!-- DESAYUNO -->
+            <section class="meal">
+              <div class="meal-head">
+                <span class="meal-label"><span class="dot" style="--dot:var(--meal-desayuno)"></span>Desayuno</span>
+                <span class="meal-total"><span class="num">410</span> <span class="unit">cal</span></span>
+              </div>
+              <div class="food-list">
+                <div class="food-row">
+                  <span class="food-name">Chilaquiles verdes con huevo</span>
+                  <span class="food-right">
+                    <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#F5F3EF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="food-kcal num">320</span><span class="food-unit"> kcal</span>
+                  </span>
+                </div>
+                <div class="food-row">
+                  <span class="food-name">Café con leche</span>
+                  <span class="food-right"><span class="food-kcal num">90</span><span class="food-unit"> kcal</span></span>
+                </div>
+              </div>
+            </section>
+
+            <!-- COMIDA -->
+            <section class="meal">
+              <div class="meal-head">
+                <span class="meal-label"><span class="dot" style="--dot:var(--meal-comida)"></span>Comida</span>
+                <span class="meal-total"><span class="num">560</span> <span class="unit">cal</span></span>
+              </div>
+              <div class="food-list">
+                <div class="food-row">
+                  <span class="food-name">Taco al pastor (2 pzas)</span>
+                  <span class="food-right"><span class="badge">est.</span><span class="food-kcal num">360</span><span class="food-unit"> kcal</span></span>
+                </div>
+                <div class="food-row">
+                  <span class="food-name">Agua de jamaica</span>
+                  <span class="food-right"><span class="food-kcal num">80</span><span class="food-unit"> kcal</span></span>
+                </div>
+                <div class="food-row">
+                  <span class="food-name">Frijoles de la olla</span>
+                  <span class="food-right"><span class="food-kcal num">120</span><span class="food-unit"> kcal</span></span>
+                </div>
+              </div>
+            </section>
+
+            <!-- CENA -->
+            <section class="meal">
+              <div class="meal-head">
+                <span class="meal-label"><span class="dot" style="--dot:var(--meal-cena)"></span>Cena</span>
+                <span class="meal-total"><span class="num">180</span> <span class="unit">cal</span></span>
+              </div>
+              <div class="food-list">
+                <div class="food-row">
+                  <span class="food-name">Pozole rojo (½ plato)</span>
+                  <span class="food-right"><span class="badge">est.</span><span class="food-kcal num">180</span><span class="food-unit"> kcal</span></span>
+                </div>
+              </div>
+            </section>
+
+            <!-- SNACKS -->
+            <section class="meal">
+              <div class="meal-head">
+                <span class="meal-label"><span class="dot" style="--dot:var(--meal-snacks)"></span>Snacks</span>
+                <span class="meal-total"><span class="num">90</span> <span class="unit">cal</span></span>
+              </div>
+              <div class="food-list">
+                <div class="food-row">
+                  <span class="food-name">Mango con chile y limón</span>
+                  <span class="food-right">
+                    <svg class="check" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#F5F3EF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="food-kcal num">90</span><span class="food-unit"> kcal</span>
+                  </span>
+                </div>
+              </div>
+            </section>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Tira de prueba ===================== -->
+    <section class="proof-strip" aria-label="Lo que prometemos">
+      <p>
+        Hecha en México <span class="sep" aria-hidden="true">·</span>
+        Pago seguro <span class="sep" aria-hidden="true">·</span>
+        Cancelas cuando quieras
+      </p>
+    </section>
+
+    <!-- ===================== Cierre / apartado ===================== -->
+    <section class="closing" id="apartar" aria-labelledby="closing-line">
+      <div class="wrap">
+        <h2 class="closing-line" id="closing-line">¿Listo para ver tu día así de claro? Aparta tu lugar de fundador hoy.</h2>
+
+        <div class="ticket">
+          <p class="ticket-eyebrow">Acceso fundador · cupos limitados</p>
+          <div class="ticket-price">
+            <span class="ticket-amount num">$20</span>
+            <span class="ticket-term">USD · el primer año</span>
+          </div>
+          <p class="ticket-fine">
+            Es una suscripción anual con precio de fundador: tu primer año cuesta $20 USD.
+            Después se renueva al precio normal — siempre te avisamos por correo antes de
+            cualquier cargo y cancelas en un toque, sin laberintos.
+          </p>
+          <a class="cta" data-checkout href="mailto:contacto@kaloriez.app?subject=Acceso%20fundador%20Kaloriez">
+            Aparta tu acceso fundador — <span class="price">$20 USD</span> el primer año
+          </a>
+          <p class="ticket-secure">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Pago seguro con Stripe
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span class="wordmark" style="font-size:16px;">Kaloriez</span>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <span>Hecha en México, 2026</span>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="mailto:contacto@kaloriez.app">contacto@kaloriez.app</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="#">Aviso de privacidad</a>
+    </div>
+  </footer>
+
+  <script>
+    // ───────────────────────────────────────────────────────────────
+    //  Pega aquí tu Stripe Payment Link real (https://buy.stripe.com/...).
+    //  Mientras quede el placeholder, los botones no cobran.
+    // ───────────────────────────────────────────────────────────────
+    const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/REEMPLAZA_CON_TU_LINK";
+
+    document.querySelectorAll("a[data-checkout]").forEach(function (a) {
+      if (STRIPE_PAYMENT_LINK && !STRIPE_PAYMENT_LINK.includes("REEMPLAZA")) {
+        a.setAttribute("href", STRIPE_PAYMENT_LINK);
+      }
+    });
+
+    // Numerar las filas para el stagger de la cascada.
+    document.querySelectorAll("#day .food-row").forEach(function (row, i) {
+      row.style.setProperty("--i", i);
+    });
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const card = document.getElementById("day");
+    const counter = card.querySelector(".ring-count");
+    const target = parseInt(counter.getAttribute("data-count-to"), 10);
+    const fmt = function (n) { return n.toLocaleString("es-MX"); };
+
+    if (!reduce && "IntersectionObserver" in window) {
+      card.classList.add("js-anim");           // arma el estado inicial (anillo vacío, filas ocultas)
+      counter.textContent = "0";
+
+      const easeOutCubic = function (t) { return 1 - Math.pow(1 - t, 3); };
+      let started = false;
+
+      const countUp = function () {
+        const duration = 900;
+        let t0 = null;
+        const step = function (ts) {
+          if (t0 === null) t0 = ts;
+          const p = Math.min((ts - t0) / duration, 1);
+          counter.textContent = fmt(Math.round(easeOutCubic(p) * target));
+          if (p < 1) requestAnimationFrame(step);
+          else counter.textContent = fmt(target);
+        };
+        requestAnimationFrame(step);
+      };
+
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting && !started) {
+            started = true;
+            card.classList.add("in");           // dispara trazado del anillo + cascada
+            countUp();
+            io.disconnect();
+          }
+        });
+      }, { threshold: 0.15, rootMargin: "0px 0px -10% 0px" });
+
+      io.observe(card);
+
+      // Red de seguridad: si por la altura del viewport el observer no dispara,
+      // forzamos el estado final para que la firma nunca quede vacía.
+      setTimeout(function () {
+        if (!started) { started = true; card.classList.add("in"); countUp(); io.disconnect(); }
+      }, 1400);
+    }
+  </script>
+</body>
+</html>
