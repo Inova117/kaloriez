@@ -203,11 +203,12 @@ export function TodayScreen() {
                 return;
             }
             
-            const { calories, source } = await detectCalories(sanitizedText);
+            const { calories, source, name } = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: generateId(),
-                name: sanitizedText,
+                // Prefer the AI-resolved clean name (Spanish); fall back to raw text.
+                name: name?.trim() || sanitizedText,
                 calories,
                 isFavorite: false,
                 timestamp: currentDate,

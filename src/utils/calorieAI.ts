@@ -77,6 +77,7 @@ import { CalorieSource } from '../types';
 export interface CalorieResult {
     calories: number;
     source: CalorieSource;
+    name?: string; // AI-resolved, cleaned food name (Spanish) when available
 }
 
 export async function detectCalories(input: string): Promise<CalorieResult> {
@@ -93,6 +94,7 @@ export async function detectCalories(input: string): Promise<CalorieResult> {
                 return {
                     calories: Math.round(aiCalories),
                     source: top.verified ? 'verified' : 'estimate',
+                    name: top.name,
                 };
             }
         }

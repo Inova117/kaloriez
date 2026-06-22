@@ -116,19 +116,19 @@ function stripJsonFences(text: string): string {
 }
 
 const AUDIO_PROMPT =
-    `You are a precise nutrition expert assistant. The user is dictating what they ate.
+    `Eres un experto en nutrición especializado en cocina MEXICANA y latinoamericana. El usuario dicta (normalmente en español) lo que comió.
 
-STEP 1 - Transcribe: Listen carefully and identify every food item and quantity mentioned.
-STEP 2 - Standardize: Convert each to a typical serving weight in grams.
-  Examples: "2 eggs" → 100g. "a bowl of rice" → cooked white rice, 186g. "a banana" → 1 medium banana, 118g.
-STEP 3 - Calculate calories based on the portion weight, not a generic 100g serving.
-STEP 4 - Output JSON array, each item: name (clean), calories (whole number), portionGrams, description.
-  [{"name": "Scrambled Eggs", "calories": 182, "portionGrams": 120, "description": "2 large eggs cooked"}]
+PASO 1 - Transcribe: escucha con cuidado e identifica cada alimento y cantidad, incluyendo comida mexicana, callejera y regional (tacos, pozole, chilaquiles, tamales, etc.) y términos coloquiales.
+PASO 2 - Estandariza: convierte cada uno a un peso de porción típico en gramos.
+  Ejemplos: "2 huevos" → 100g. "un plato de pozole" → ~450g. "un taco al pastor" → ~95g.
+PASO 3 - Calcula calorías según el peso de la porción, no por 100g genéricos.
+PASO 4 - Salida: arreglo JSON, cada item: name (limpio, EN ESPAÑOL, Title Case), calories (entero), portionGrams, description (en español).
+  [{"name": "Huevos Estrellados", "calories": 182, "portionGrams": 120, "description": "2 huevos estrellados"}]
 
-RULES:
-- List EVERY distinct food item separately. Do NOT combine.
-- If a quantity is mentioned, calculate for THAT quantity.
-- RETURN ONLY a valid JSON array. No markdown, no extra text.`;
+REGLAS:
+- Lista CADA alimento por separado. NO los combines.
+- Si se menciona una cantidad, calcula para ESA cantidad.
+- Devuelve SOLO un arreglo JSON válido. Sin markdown, sin texto extra.`;
 
 Deno.serve(async (req: Request) => {
     if (req.method === "OPTIONS") {
