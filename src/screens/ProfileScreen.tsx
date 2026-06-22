@@ -127,7 +127,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <Pressable onPress={onClose} style={styles.closeButton}>
+                <Pressable
+                    onPress={onClose}
+                    style={styles.closeButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                     <Ionicons name="close" size={24} color={colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Profile</Text>

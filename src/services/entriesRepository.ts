@@ -7,6 +7,7 @@ import {
     loadEntriesForDate as loadCachedEntriesForDate,
     loadEntriesForDateRange as loadCachedEntriesForDateRange,
 } from '../utils/storageUtils';
+import { enqueueAndFlush } from './syncQueue';
 
 /**
  * Repository for food entries. Supabase is the source of truth; AsyncStorage is
@@ -93,9 +94,12 @@ export async function fetchEntriesForRange(
     }
 }
 
+// All mutations go through the durable sync queue so they survive being offline
+// and are retried on reconnect (the queue flushes immediately when online).
 export async function addEntryRemote(userId: string, entry: FoodEntry): Promise<void> {
-    try {
-        const { error } = await supabase.from('food_entries').insert({
+    await enqueueAndFlush({
+        kind: 'food_upsert',
+        row: {
             id: entry.id,
             user_id: userId,
             name: entry.name,
@@ -103,35 +107,23 @@ export async function addEntryRemote(userId: string, entry: FoodEntry): Promise<
             meal_type: entry.mealType,
             is_favorite: entry.isFavorite ?? false,
             timestamp: new Date(entry.timestamp).toISOString(),
-        });
-        if (error) throw error;
-    } catch (error) {
-        logger.error('addEntryRemote failed', error);
-    }
+        },
+    });
 }
 
 export async function updateEntryRemote(entry: FoodEntry): Promise<void> {
-    try {
-        const { error } = await supabase
-            .from('food_entries')
-            .update({
-                name: entry.name,
-                calories: entry.calories,
-                meal_type: entry.mealType,
-                is_favorite: entry.isFavorite ?? false,
-            })
-            .eq('id', entry.id);
-        if (error) throw error;
-    } catch (error) {
-        logger.error('updateEntryRemote failed', error);
-    }
+    await enqueueAndFlush({
+        kind: 'food_update',
+        id: entry.id,
+        patch: {
+            name: entry.name,
+            calories: entry.calories,
+            meal_type: entry.mealType,
+            is_favorite: entry.isFavorite ?? false,
+        },
+    });
 }
 
 export async function deleteEntryRemote(entryId: string): Promise<void> {
-    try {
-        const { error } = await supabase.from('food_entries').delete().eq('id', entryId);
-        if (error) throw error;
-    } catch (error) {
-        logger.error('deleteEntryRemote failed', error);
-    }
+    await enqueueAndFlush({ kind: 'food_delete', id: entryId });
 }

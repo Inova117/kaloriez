@@ -49,6 +49,9 @@ export function FoodEntryCard({ entry, index = 0, onPress, onLongPress }: FoodEn
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
                 delayLongPress={500}
+                accessibilityRole="button"
+                accessibilityLabel={`${entry.name}, ${entry.calories} kilocalories${entry.isFavorite ? ', favorite' : ''}`}
+                accessibilityHint="Tap to toggle favorite, long press for more options"
             >
                 <View style={styles.leftSection}>
                     <Text style={styles.foodName} numberOfLines={1}>{entry.name}</Text>

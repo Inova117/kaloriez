@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import { enqueueAndFlush } from './syncQueue';
 
 export interface WeightEntry {
     date: string; // YYYY-MM-DD
@@ -52,12 +53,8 @@ export async function upsertWeightRemote(
     date: string,
     weight: number
 ): Promise<void> {
-    try {
-        const { error } = await supabase
-            .from('weight_entries')
-            .upsert({ user_id: userId, date, weight }, { onConflict: 'user_id,date' });
-        if (error) throw error;
-    } catch (error) {
-        logger.error('upsertWeightRemote failed', error);
-    }
+    await enqueueAndFlush({
+        kind: 'weight_upsert',
+        row: { user_id: userId, date, weight },
+    });
 }

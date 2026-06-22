@@ -79,7 +79,13 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Statistics</Text>
-                <Pressable onPress={onClose} style={styles.closeButton}>
+                <Pressable
+                    onPress={onClose}
+                    style={styles.closeButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                     <Ionicons name="close-circle" size={28} color={colors.textMuted} />
                 </Pressable>
             </View>

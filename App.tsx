@@ -8,6 +8,7 @@ import { OnboardingScreen, HAS_COMPLETED_ONBOARDING_KEY } from './src/screens/On
 import { AuthScreen } from './src/screens/AuthScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { migrateLocalDataToSupabase } from './src/services/dataMigration';
+import { flushQueue } from './src/services/syncQueue';
 import { supabase } from './src/lib/supabase';
 import { colors } from './src/theme/colors';
 import { logger } from './src/utils/logger';
@@ -46,6 +47,11 @@ function AppContent() {
       handleDataMigration();
     }
   }, [user?.id, hasOnboarded]);
+
+  // Drain any writes that were queued while offline once we have a user.
+  useEffect(() => {
+    if (user) flushQueue();
+  }, [user?.id]);
 
   const checkOnboardingStatus = async () => {
     try {

@@ -19,9 +19,12 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
             <Pressable
                 style={[styles.tab, activeTab === 'today' && styles.activeTab]}
                 onPress={() => onTabChange('today')}
+                accessibilityRole="tab"
+                accessibilityLabel="Today"
+                accessibilityState={{ selected: activeTab === 'today' }}
             >
-                <Ionicons 
-                    name="calendar-outline" 
+                <Ionicons
+                    name="calendar-outline"
                     size={20} 
                     color={activeTab === 'today' ? colors.textPrimary : colors.textSecondary}
                 />
@@ -34,9 +37,12 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
             <Pressable
                 style={[styles.tab, activeTab === 'favorites' && styles.activeTab]}
                 onPress={() => onTabChange('favorites')}
+                accessibilityRole="tab"
+                accessibilityLabel="Favorites"
+                accessibilityState={{ selected: activeTab === 'favorites' }}
             >
-                <Ionicons 
-                    name="heart-outline" 
+                <Ionicons
+                    name="heart-outline"
                     size={20} 
                     color={activeTab === 'favorites' ? colors.textPrimary : colors.textSecondary}
                 />
@@ -49,9 +55,12 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
             <Pressable
                 style={[styles.tab, activeTab === 'stats' && styles.activeTab]}
                 onPress={() => onTabChange('stats')}
+                accessibilityRole="tab"
+                accessibilityLabel="Stats"
+                accessibilityState={{ selected: activeTab === 'stats' }}
             >
-                <Ionicons 
-                    name="bar-chart-outline" 
+                <Ionicons
+                    name="bar-chart-outline"
                     size={20} 
                     color={activeTab === 'stats' ? colors.textPrimary : colors.textSecondary}
                 />
@@ -64,9 +73,12 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
             <Pressable
                 style={[styles.tab, activeTab === 'profile' && styles.activeTab]}
                 onPress={() => onTabChange('profile')}
+                accessibilityRole="tab"
+                accessibilityLabel="Profile"
+                accessibilityState={{ selected: activeTab === 'profile' }}
             >
-                <Ionicons 
-                    name="person-outline" 
+                <Ionicons
+                    name="person-outline"
                     size={20} 
                     color={activeTab === 'profile' ? colors.textPrimary : colors.textSecondary}
                 />

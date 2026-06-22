@@ -184,14 +184,17 @@ export function WeightTracker() {
                         </Text>
                     )}
                 </View>
-                <Pressable 
+                <Pressable
                     style={styles.addButton}
                     onPress={() => setIsAddingWeight(!isAddingWeight)}
+                    accessibilityRole="button"
+                    accessibilityLabel={isAddingWeight ? 'Cancel adding weight' : 'Add weight entry'}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                    <Ionicons 
-                        name={isAddingWeight ? "close" : "add"} 
-                        size={20} 
-                        color={colors.accent} 
+                    <Ionicons
+                        name={isAddingWeight ? "close" : "add"}
+                        size={20}
+                        color={colors.accent}
                     />
                 </Pressable>
             </View>

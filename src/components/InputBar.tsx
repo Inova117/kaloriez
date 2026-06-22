@@ -210,6 +210,9 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                                 onPressIn={startRecording}
                                 onPressOut={stopRecording}
                                 disabled={isProcessing}
+                                accessibilityRole="button"
+                                accessibilityLabel="Record voice entry"
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Ionicons
                                     name="mic"
@@ -222,6 +225,9 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                                 style={styles.micButtonActive}
                                 onPressIn={startRecording}
                                 onPressOut={stopRecording}
+                                accessibilityRole="button"
+                                accessibilityLabel="Stop recording"
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Animated.View style={{ transform: [{ scale: micScale }] }}>
                                     <View style={styles.stopSquare} />
@@ -236,6 +242,9 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                                 style={[styles.sendButton, styles.sendButtonActive]}
                                 onPress={handleButtonPress}
                                 disabled={isProcessing}
+                                accessibilityRole="button"
+                                accessibilityLabel="Add food"
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Ionicons
                                     name="arrow-up"
