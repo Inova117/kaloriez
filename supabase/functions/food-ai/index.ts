@@ -176,6 +176,7 @@ Deno.serve(async (req: Request) => {
             return {
                 name,
                 calories,
+                verified: usda != null,
                 description: s.description
                     ? `${s.description}${usda != null ? " (USDA verified)" : " (AI estimate)"}`
                     : undefined,

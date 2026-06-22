@@ -202,7 +202,7 @@ export function TodayScreen() {
                 return;
             }
             
-            const calories = await detectCalories(sanitizedText);
+            const { calories, source } = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: generateId(),
@@ -211,6 +211,7 @@ export function TodayScreen() {
                 isFavorite: false,
                 timestamp: currentDate,
                 mealType,
+                source,
             };
             setEntries(prev => [newEntry, ...prev]);
             if (user) addEntryRemote(user.id, newEntry);
@@ -264,7 +265,8 @@ export function TodayScreen() {
         // Honour the calories the user explicitly typed instead of re-estimating
         // them from the name (which silently discarded their correction).
         if (!trimmed || !Number.isFinite(newCalories) || newCalories <= 0) return;
-        const updated = { ...selectedEntry, name: trimmed, calories: Math.round(newCalories) };
+        // A manual correction is user-authoritative — clear any AI/estimate badge.
+        const updated = { ...selectedEntry, name: trimmed, calories: Math.round(newCalories), source: undefined };
         setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
         updateEntryRemote(updated);
     };

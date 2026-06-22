@@ -72,25 +72,35 @@ function extractQuantity(text: string): { quantity: number; unit: string } {
 
 import { getFoodSuggestions } from '../lib/foodAI';
 import { logger } from './logger';
+import { CalorieSource } from '../types';
 
-export async function detectCalories(input: string): Promise<number> {
+export interface CalorieResult {
+    calories: number;
+    source: CalorieSource;
+}
+
+export async function detectCalories(input: string): Promise<CalorieResult> {
     logger.debug('Detecting calories');
 
     try {
-        // Use real AI to get suggestions (already numerically validated in groq.ts)
+        // Use real AI to get suggestions (already numerically validated server-side)
         const suggestions = await getFoodSuggestions(input);
 
         if (suggestions && suggestions.length > 0) {
-            const aiCalories = Number(suggestions[0].calories);
+            const top = suggestions[0];
+            const aiCalories = Number(top.calories);
             if (Number.isFinite(aiCalories) && aiCalories >= 0) {
-                return Math.round(aiCalories);
+                return {
+                    calories: Math.round(aiCalories),
+                    source: top.verified ? 'verified' : 'estimate',
+                };
             }
         }
     } catch (error) {
         logger.error('AI calorie detection failed, falling back to local database', error);
     }
 
-    // Fallback to local regex if AI fails
+    // Fallback to local regex if AI fails — a rough estimate, not verified.
     const { quantity, unit } = extractQuantity(input);
 
     for (const food of foodDatabase) {
@@ -101,20 +111,19 @@ export async function detectCalories(input: string): Promise<number> {
             } else {
                 calories = Math.round(food.baseCalories * quantity);
             }
-            return calories;
+            return { calories, source: 'estimate' };
         }
     }
 
-    // Last resort: estimate based on quantity. NOTE: this is a blind guess; the
-    // UI should signal that the value is an estimate (tracked for a follow-up).
+    // Last resort: a blind guess. Surfaced as 'guess' so the UI can flag it.
     const hasNumber = /\d+/.test(input);
     if (hasNumber && quantity > 1) {
         const estimatedCalPerItem = 150; // Conservative per-item estimate
-        return Math.round(estimatedCalPerItem * quantity);
+        return { calories: Math.round(estimatedCalPerItem * quantity), source: 'guess' };
     }
 
     const moderateEstimate = 200; // Default estimate for a single vague item
-    return moderateEstimate;
+    return { calories: moderateEstimate, source: 'guess' };
 }
 
 // Quick add items for the shortcuts bar

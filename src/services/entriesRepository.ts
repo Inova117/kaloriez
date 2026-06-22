@@ -35,6 +35,7 @@ function mapRow(row: any): FoodEntry {
         mealType: row.meal_type,
         isFavorite: row.is_favorite,
         timestamp: new Date(row.timestamp),
+        source: row.source ?? undefined,
     };
 }
 
@@ -107,6 +108,7 @@ export async function addEntryRemote(userId: string, entry: FoodEntry): Promise<
             meal_type: entry.mealType,
             is_favorite: entry.isFavorite ?? false,
             timestamp: new Date(entry.timestamp).toISOString(),
+            source: entry.source ?? null,
         },
     });
 }
@@ -120,6 +122,7 @@ export async function updateEntryRemote(entry: FoodEntry): Promise<void> {
             calories: entry.calories,
             meal_type: entry.mealType,
             is_favorite: entry.isFavorite ?? false,
+            source: entry.source ?? null,
         },
     });
 }

@@ -19,9 +19,13 @@ CREATE TABLE IF NOT EXISTS food_entries (
     calories INTEGER NOT NULL,
     meal_type TEXT CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snacks')) NOT NULL,
     is_favorite BOOLEAN DEFAULT FALSE,
+    source TEXT CHECK (source IN ('verified', 'estimate', 'guess')),
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add `source` to pre-existing food_entries tables (idempotent).
+ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS source TEXT;
 
 -- Create quick_add_items table
 CREATE TABLE IF NOT EXISTS quick_add_items (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,6 +13,8 @@ interface ProfileScreenProps {
 }
 
 const GOAL_STORAGE_KEY = '@weekly_weight_goal';
+// TODO: replace with your hosted privacy policy URL before store submission.
+const PRIVACY_POLICY_URL = 'https://kaloriez.app/privacy';
 
 export function ProfileScreen({ onClose }: ProfileScreenProps) {
     const { user, signOut, deleteAccount } = useAuth();
@@ -81,6 +83,15 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
             Alert.alert('Error', 'Could not change password. Please try again.');
         } finally {
             setIsSavingPassword(false);
+        }
+    };
+
+    const handleOpenPrivacy = async () => {
+        try {
+            await Linking.openURL(PRIVACY_POLICY_URL);
+        } catch (error) {
+            logger.error('Failed to open privacy policy', error);
+            Alert.alert('Error', 'Could not open the privacy policy.');
         }
     };
 
@@ -257,6 +268,22 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                             </Pressable>
                         </View>
                     )}
+                </View>
+
+                {/* About */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>ABOUT</Text>
+                    <Pressable
+                        style={styles.card}
+                        onPress={handleOpenPrivacy}
+                        accessibilityRole="link"
+                        accessibilityLabel="Privacy Policy"
+                    >
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Privacy Policy</Text>
+                            <Ionicons name="open-outline" size={18} color={colors.textMuted} />
+                        </View>
+                    </Pressable>
                 </View>
 
                 {/* Sign Out */}

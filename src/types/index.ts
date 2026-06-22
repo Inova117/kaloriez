@@ -3,6 +3,12 @@ import { colors } from '../theme/colors';
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
 
+// How trustworthy the calorie number is:
+//  - 'verified': USDA ground-truth
+//  - 'estimate': AI / local-database estimate
+//  - 'guess':    blind fallback when nothing matched (show prominently)
+export type CalorieSource = 'verified' | 'estimate' | 'guess';
+
 export interface FoodEntry {
     id: string;
     name: string;
@@ -10,6 +16,7 @@ export interface FoodEntry {
     isFavorite: boolean;
     timestamp: Date;
     mealType: MealType;
+    source?: CalorieSource;
 }
 
 export interface QuickAddItem {

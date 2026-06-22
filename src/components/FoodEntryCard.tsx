@@ -50,7 +50,11 @@ export function FoodEntryCard({ entry, index = 0, onPress, onLongPress }: FoodEn
                 onPressOut={handlePressOut}
                 delayLongPress={500}
                 accessibilityRole="button"
-                accessibilityLabel={`${entry.name}, ${entry.calories} kilocalories${entry.isFavorite ? ', favorite' : ''}`}
+                accessibilityLabel={`${entry.name}, ${entry.calories} kilocalories${
+                    entry.source === 'verified' ? ', USDA verified'
+                    : entry.source === 'guess' ? ', rough estimate'
+                    : ''
+                }${entry.isFavorite ? ', favorite' : ''}`}
                 accessibilityHint="Tap to toggle favorite, long press for more options"
             >
                 <View style={styles.leftSection}>
@@ -58,6 +62,17 @@ export function FoodEntryCard({ entry, index = 0, onPress, onLongPress }: FoodEn
                 </View>
 
                 <View style={styles.rightSection}>
+                    {entry.source === 'verified' && (
+                        <Ionicons
+                            name="checkmark-circle"
+                            size={13}
+                            color={colors.success}
+                            style={styles.badgeIcon}
+                        />
+                    )}
+                    {entry.source === 'guess' && (
+                        <Text style={styles.guessBadge}>est.</Text>
+                    )}
                     <Text style={styles.calories}>{entry.calories}</Text>
                     <Text style={styles.unit}> kcal</Text>
                 </View>
@@ -95,7 +110,18 @@ const styles = StyleSheet.create({
     },
     rightSection: {
         flexDirection: 'row',
-        alignItems: 'baseline',
+        alignItems: 'center',
+    },
+    badgeIcon: {
+        marginRight: 5,
+    },
+    guessBadge: {
+        fontSize: 10,
+        fontWeight: '500',
+        color: colors.textMuted,
+        marginRight: 5,
+        textTransform: 'uppercase',
+        letterSpacing: 0.3,
     },
     calories: {
         ...typography.cardCalories,

@@ -5,6 +5,7 @@ export interface FoodSuggestion {
     name: string;
     calories: number;
     description?: string;
+    verified?: boolean; // true when the calories came from USDA ground truth
 }
 
 /**
@@ -31,6 +32,7 @@ export async function getFoodSuggestions(query: string): Promise<FoodSuggestion[
                 name: String(s?.name ?? '').trim() || 'Food',
                 calories: Number(s?.calories),
                 description: s?.description,
+                verified: s?.verified === true,
             }))
             .filter((s) => Number.isFinite(s.calories) && s.calories >= 0)
             .map((s) => ({ ...s, calories: Math.round(s.calories) }));

@@ -62,8 +62,10 @@ must be assumed public:
 ## 5. App Store / Play Store checklist (still open)
 
 - ✅ Account deletion (implemented — Profile → Delete Account).
-- ⬜ **Privacy Policy URL** — required for an account-based health app. Add a link
-  in Profile and in the store listings.
+- 🔶 Privacy Policy link added in Profile → About, but it points to the
+  placeholder `PRIVACY_POLICY_URL` (`https://kaloriez.app/privacy`) in
+  `src/screens/ProfileScreen.tsx`. **Host a real policy and update that URL**
+  before submission, and add the same URL to the store listings.
 - ⬜ Data-safety / privacy nutrition labels disclosing Sentry + health data.
 
 ## Notes / known limitations
