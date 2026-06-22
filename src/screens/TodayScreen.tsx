@@ -18,6 +18,7 @@ import { StatsScreen } from './StatsScreen';
 import { colors } from '../theme/colors';
 import { FoodEntry, QuickAddItem, ProcessingState, MEAL_CONFIGS, MealType } from '../types';
 import { detectCalories } from '../utils/calorieAI';
+import { processAudioDictation } from '../lib/foodAI';
 import { getMealTypeFromTime } from '../utils/mealUtils';
 import { formatDateKey, isToday } from '../utils/dateUtils';
 import { saveEntriesForDate, loadEntriesForDate, getDatesWithEntries } from '../utils/storageUtils';
@@ -223,6 +224,39 @@ export function TodayScreen() {
         }
     }, [currentDate]);
 
+    const handleAudioEntry = useCallback(async (uri: string) => {
+        setProcessingState('processing');
+        try {
+            const suggestions = await processAudioDictation(uri);
+            if (suggestions.length === 0) {
+                setProcessingState('idle');
+                Alert.alert(
+                    "Couldn't catch that",
+                    'Try saying what you ate, e.g. "two eggs and a banana".'
+                );
+                return;
+            }
+            const mealType = getMealTypeFromTime();
+            const newEntries: FoodEntry[] = suggestions.map(s => ({
+                id: generateId(),
+                name: s.name,
+                calories: s.calories,
+                isFavorite: false,
+                timestamp: currentDate,
+                mealType,
+                source: s.verified ? 'verified' : 'estimate',
+            }));
+            setEntries(prev => [...newEntries, ...prev]);
+            if (user) newEntries.forEach(e => addEntryRemote(user.id, e));
+            setProcessingState('done');
+            if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setTimeout(() => setProcessingState('idle'), 300);
+        } catch (error) {
+            logger.error('Voice entry failed', error);
+            setProcessingState('idle');
+        }
+    }, [currentDate, user?.id]);
+
     const handleQuickAdd = useCallback(async (item: QuickAddItem) => {
         try {
             const mealType = getMealTypeFromTime();
@@ -379,6 +413,7 @@ export function TodayScreen() {
 
                     <InputBar
                         onSubmit={handleAddEntry}
+                        onAudioRecorded={handleAudioEntry}
                         processingState={processingState}
                         focusTrigger={focusTrigger}
                     />

@@ -26,11 +26,14 @@ supabase login
 supabase link --project-ref <your-project-ref>
 
 supabase functions deploy food-ai
+supabase functions deploy food-ai-audio
 supabase functions deploy delete-account
 ```
 
 - `food-ai` runs the Gemini → USDA pipeline server-side (replaces the old
   client `src/lib/groq.ts` / `src/lib/usda.ts`).
+- `food-ai-audio` transcribes a voice clip with Gemini and returns the same
+  enriched suggestions (powers the mic button). Uses the same secrets as `food-ai`.
 - `delete-account` deletes the auth user + cascaded data (service role).
 
 `delete-account` requires JWT verification (the default) — do **not** deploy it
@@ -70,8 +73,9 @@ must be assumed public:
 
 ## Notes / known limitations
 
-- **Offline writes are not yet queued.** Entries/weights added while offline are
-  saved to the local cache (not lost) but are not retried against Supabase until
-  a future sync-queue iteration. Online usage syncs immediately.
-- The unused media deps (`expo-audio`, `expo-video`, `expo-blur`) and the
-  voice-dictation UI remain; wire or remove them in a later pass.
+- **Offline writes** use a durable queue (`syncQueue`) that persists failed
+  writes and replays them on reconnect/launch. Online usage syncs immediately.
+- **Voice dictation** is wired through `food-ai-audio`. The recorder uses
+  expo-av's HIGH_QUALITY preset (`.m4a`); if Gemini rejects that container on a
+  given device, the function returns no suggestions and the UI no-ops — verify
+  on a real device and adjust the recording format/mime if needed.

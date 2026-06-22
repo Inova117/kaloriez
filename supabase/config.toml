@@ -7,5 +7,8 @@ project_id = "fjmhabnyfzjuockfjuqu"
 [functions.food-ai]
 verify_jwt = true
 
+[functions.food-ai-audio]
+verify_jwt = true
+
 [functions.delete-account]
 verify_jwt = true
