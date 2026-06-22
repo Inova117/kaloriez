@@ -55,8 +55,22 @@ function toSafeCalories(value: unknown): number | null {
     return Math.round(n);
 }
 
-async function usdaCaloriesPer100g(foodName: string): Promise<number | null> {
-    if (!USDA_API_KEY) return null;
+function usdaTokens(s: string): Set<string> {
+    return new Set(
+        String(s).toLowerCase().split(/[^a-záéíóúñ]+/).filter((w) => w.length >= 4),
+    );
+}
+
+function usdaMatches(query: string, description: string): boolean {
+    const q = usdaTokens(query);
+    if (q.size === 0) return false;
+    const d = usdaTokens(description);
+    for (const t of q) if (d.has(t)) return true;
+    return false;
+}
+
+async function usdaLookup(foodName: string): Promise<{ kcal: number; description: string } | null> {
+    if (!USDA_API_KEY || !foodName.trim()) return null;
     try {
         const url =
             `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(foodName)}` +
@@ -78,33 +92,35 @@ async function usdaCaloriesPer100g(foodName: string): Promise<number | null> {
         );
         const kcal = energy?.value ?? 0;
         if (!kcal || kcal > MAX_KCAL_PER_100G) return null;
-        return kcal;
+        const description = String(preferred.description ?? foodName);
+        return { kcal, description };
     } catch (_e) {
         return null;
     }
-}
-
-async function caloriesFromUSDA(foodName: string, portionGrams: number): Promise<number | null> {
-    const per100 = await usdaCaloriesPer100g(foodName);
-    if (per100 == null) return null;
-    return Math.round((per100 / 100) * portionGrams);
 }
 
 async function enrichSuggestions(parsed: any[]): Promise<any[]> {
     const enriched = await Promise.all((parsed ?? []).map(async (s: any) => {
         const portionRaw = Number(s?.portionGrams);
         const portionGrams = Number.isFinite(portionRaw) && portionRaw > 0 ? portionRaw : 100;
-        const usda = await caloriesFromUSDA(String(s?.name ?? ""), portionGrams);
-        const ai = toSafeCalories(s?.calories);
-        const calories = usda ?? ai;
-        if (calories == null) return null;
         const name = String(s?.name ?? "").trim() || "Food";
+        const lookupName = String(s?.usdaQuery ?? "").trim() || name;
+        const ai = toSafeCalories(s?.calories);
+
+        const usda = await usdaLookup(lookupName);
+        let usdaCalories: number | null = null;
+        if (usda && usdaMatches(lookupName, usda.description)) {
+            usdaCalories = Math.round((usda.kcal / 100) * portionGrams);
+        }
+
+        const calories = usdaCalories ?? ai;
+        if (calories == null) return null;
         return {
             name,
             calories,
-            verified: usda != null,
+            verified: usdaCalories != null,
             description: s?.description
-                ? `${s.description}${usda != null ? " (USDA verified)" : " (AI estimate)"}`
+                ? `${s.description}${usdaCalories != null ? " (USDA verified)" : " (AI estimate)"}`
                 : undefined,
         };
     }));
@@ -122,8 +138,8 @@ PASO 1 - Transcribe: escucha con cuidado e identifica cada alimento y cantidad, 
 PASO 2 - Estandariza: convierte cada uno a un peso de porción típico en gramos.
   Ejemplos: "2 huevos" → 100g. "un plato de pozole" → ~450g. "un taco al pastor" → ~95g.
 PASO 3 - Calcula calorías según el peso de la porción, no por 100g genéricos.
-PASO 4 - Salida: arreglo JSON, cada item: name (limpio, EN ESPAÑOL, Title Case), calories (entero), portionGrams, description (en español).
-  [{"name": "Huevos Estrellados", "calories": 182, "portionGrams": 120, "description": "2 huevos estrellados"}]
+PASO 4 - Salida: arreglo JSON, cada item: name (limpio, EN ESPAÑOL, Title Case), calories (entero), portionGrams, description (en español), usdaQuery (nombre genérico EN INGLÉS para la base USDA, p.ej. "fried eggs"; "" si es platillo compuesto/mexicano poco probable en USDA).
+  [{"name": "Huevos Estrellados", "calories": 182, "portionGrams": 120, "description": "2 huevos estrellados", "usdaQuery": "fried eggs"}]
 
 REGLAS:
 - Lista CADA alimento por separado. NO los combines.

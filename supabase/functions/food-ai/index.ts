@@ -54,8 +54,24 @@ function toSafeCalories(value: unknown): number | null {
     return Math.round(n);
 }
 
-async function usdaCaloriesPer100g(foodName: string): Promise<number | null> {
-    if (!USDA_API_KEY) return null;
+function usdaTokens(s: string): Set<string> {
+    return new Set(
+        String(s).toLowerCase().split(/[^a-záéíóúñ]+/).filter((w) => w.length >= 4),
+    );
+}
+
+// True only if the matched USDA food shares a meaningful word with the query,
+// so we never stamp "verified" on a fuzzy wrong-food match.
+function usdaMatches(query: string, description: string): boolean {
+    const q = usdaTokens(query);
+    if (q.size === 0) return false;
+    const d = usdaTokens(description);
+    for (const t of q) if (d.has(t)) return true;
+    return false;
+}
+
+async function usdaLookup(foodName: string): Promise<{ kcal: number; description: string } | null> {
+    if (!USDA_API_KEY || !foodName.trim()) return null;
     try {
         const url =
             `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(foodName)}` +
@@ -78,33 +94,36 @@ async function usdaCaloriesPer100g(foodName: string): Promise<number | null> {
         );
         const kcal = energy?.value ?? 0;
         if (!kcal || kcal > MAX_KCAL_PER_100G) return null;
-        return kcal;
+        const description = String(preferred.description ?? foodName);
+        return { kcal, description };
     } catch (_e) {
         return null;
     }
-}
-
-async function caloriesFromUSDA(foodName: string, portionGrams: number): Promise<number | null> {
-    const per100 = await usdaCaloriesPer100g(foodName);
-    if (per100 == null) return null;
-    return Math.round((per100 / 100) * portionGrams);
 }
 
 async function enrichSuggestions(parsed: any[]): Promise<any[]> {
     const enriched = await Promise.all((parsed ?? []).map(async (s: any) => {
         const portionRaw = Number(s?.portionGrams);
         const portionGrams = Number.isFinite(portionRaw) && portionRaw > 0 ? portionRaw : 100;
-        const usda = await caloriesFromUSDA(String(s?.name ?? ""), portionGrams);
-        const ai = toSafeCalories(s?.calories);
-        const calories = usda ?? ai;
-        if (calories == null) return null;
         const name = String(s?.name ?? "").trim() || "Food";
+        // Use the model's English query for the US-centric USDA DB; fall back to name.
+        const lookupName = String(s?.usdaQuery ?? "").trim() || name;
+        const ai = toSafeCalories(s?.calories);
+
+        const usda = await usdaLookup(lookupName);
+        let usdaCalories: number | null = null;
+        if (usda && usdaMatches(lookupName, usda.description)) {
+            usdaCalories = Math.round((usda.kcal / 100) * portionGrams);
+        }
+
+        const calories = usdaCalories ?? ai;
+        if (calories == null) return null;
         return {
             name,
             calories,
-            verified: usda != null,
+            verified: usdaCalories != null,
             description: s?.description
-                ? `${s.description}${usda != null ? " (USDA verified)" : " (AI estimate)"}`
+                ? `${s.description}${usdaCalories != null ? " (USDA verified)" : " (AI estimate)"}`
                 : undefined,
         };
     }));
@@ -128,8 +147,8 @@ PASO 2 - Estima calorías con cuidado:
   - Para comida mexicana usa porciones y preparaciones reales (con tortilla, aceite, etc.).
 
 PASO 3 - Formato de salida:
-  - Devuelve un arreglo JSON donde cada item tiene: name (nombre limpio EN ESPAÑOL, Title Case, sin palabras de más), calories (entero, para la porción exacta), portionGrams (el peso usado), description (en español, p.ej. "2 huevos estrellados, ~120g").
-  - Ejemplo: [{"name": "Tacos Al Pastor", "calories": 285, "portionGrams": 190, "description": "2 tacos al pastor con tortilla de maíz"}]
+  - Devuelve un arreglo JSON donde cada item tiene: name (nombre limpio EN ESPAÑOL, Title Case, sin palabras de más), calories (entero, para la porción exacta), portionGrams (el peso usado), description (en español, p.ej. "2 huevos estrellados, ~120g"), usdaQuery (nombre genérico EN INGLÉS para buscar en la base USDA, p.ej. "pork tacos", "grilled chicken breast"; usa "" si es un platillo compuesto/mexicano poco probable en USDA).
+  - Ejemplo: [{"name": "Tacos Al Pastor", "calories": 285, "portionGrams": 190, "description": "2 tacos al pastor con tortilla de maíz", "usdaQuery": "pork tacos"}]
 
 REGLAS:
 - Si el usuario menciona cantidad (2 huevos, 200g de pollo), calcula para ESA cantidad, no para 100g.
