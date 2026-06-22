@@ -1,0 +1,11 @@
+# Supabase CLI project config.
+# project_id is your project ref (from the dashboard URL / API settings).
+project_id = "fjmhabnyfzjuockfjuqu"
+
+# Both functions require a valid user JWT (the client attaches it automatically
+# via supabase.functions.invoke). Do NOT set verify_jwt = false.
+[functions.food-ai]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true

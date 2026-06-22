@@ -114,7 +114,7 @@ CREATE POLICY "Users can insert own food entries" ON food_entries
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own food entries" ON food_entries
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own food entries" ON food_entries
     FOR DELETE USING (auth.uid() = user_id);
@@ -127,7 +127,7 @@ CREATE POLICY "Users can insert own quick add items" ON quick_add_items
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own quick add items" ON quick_add_items
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own quick add items" ON quick_add_items
     FOR DELETE USING (auth.uid() = user_id);
