@@ -21,12 +21,21 @@ import { detectCalories } from '../utils/calorieAI';
 import { getMealTypeFromTime } from '../utils/mealUtils';
 import { formatDateKey, isToday } from '../utils/dateUtils';
 import { saveEntriesForDate, loadEntriesForDate, getDatesWithEntries } from '../utils/storageUtils';
+import {
+    fetchEntriesForDate,
+    addEntryRemote,
+    updateEntryRemote,
+    deleteEntryRemote,
+} from '../services/entriesRepository';
+import { useAuth } from '../contexts/AuthContext';
+import { generateId } from '../utils/id';
 import { logger } from '../utils/logger';
 
 const GOAL_STORAGE_KEY = '@daily_goal';
 const DEFAULT_GOAL = 2000;
 
 export function TodayScreen() {
+    const { user } = useAuth();
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [entries, setEntries] = useState<FoodEntry[]>([]);
     const [processingState, setProcessingState] = useState<ProcessingState>('idle');
@@ -108,7 +117,7 @@ export function TodayScreen() {
 
     useEffect(() => {
         loadEntriesForCurrentDate();
-    }, [currentDate]);
+    }, [currentDate, user?.id]);
 
     // Save and update days with data
     useEffect(() => {
@@ -136,7 +145,10 @@ export function TodayScreen() {
 
     const loadEntriesForCurrentDate = async () => {
         try {
-            const loaded = await loadEntriesForDate(currentDate);
+            // Supabase is the source of truth; falls back to local cache offline.
+            const loaded = user
+                ? await fetchEntriesForDate(user.id, currentDate)
+                : await loadEntriesForDate(currentDate);
             setEntries(loaded);
             setHasReachedGoal(false);
         } catch (error) {
@@ -193,7 +205,7 @@ export function TodayScreen() {
             const calories = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
-                id: Date.now().toString(),
+                id: generateId(),
                 name: sanitizedText,
                 calories,
                 isFavorite: false,
@@ -201,6 +213,7 @@ export function TodayScreen() {
                 mealType,
             };
             setEntries(prev => [newEntry, ...prev]);
+            if (user) addEntryRemote(user.id, newEntry);
             setProcessingState('done');
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setTimeout(() => setProcessingState('idle'), 300);
@@ -213,7 +226,7 @@ export function TodayScreen() {
         try {
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
-                id: Date.now().toString(),
+                id: generateId(),
                 name: item.name,
                 calories: item.calories,
                 isFavorite: false,
@@ -221,14 +234,17 @@ export function TodayScreen() {
                 mealType,
             };
             setEntries(prev => [newEntry, ...prev]);
+            if (user) addEntryRemote(user.id, newEntry);
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } catch (error) {
             logger.error('Failed to add quick item', error);
         }
-    }, [currentDate]);
+    }, [currentDate, user?.id]);
 
     const handleCardPress = useCallback((entry: FoodEntry) => {
-        setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isFavorite: !e.isFavorite } : e));
+        const updated = { ...entry, isFavorite: !entry.isFavorite };
+        setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
+        updateEntryRemote(updated);
     }, []);
 
     const handleCardLongPress = useCallback(async (entry: FoodEntry) => {
@@ -248,9 +264,9 @@ export function TodayScreen() {
         // Honour the calories the user explicitly typed instead of re-estimating
         // them from the name (which silently discarded their correction).
         if (!trimmed || !Number.isFinite(newCalories) || newCalories <= 0) return;
-        setEntries(prev => prev.map(e =>
-            e.id === selectedEntry.id ? { ...e, name: trimmed, calories: Math.round(newCalories) } : e
-        ));
+        const updated = { ...selectedEntry, name: trimmed, calories: Math.round(newCalories) };
+        setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
+        updateEntryRemote(updated);
     };
 
     const handleDelete = useCallback(async () => {
@@ -263,6 +279,7 @@ export function TodayScreen() {
                 style: 'destructive',
                 onPress: () => {
                     setEntries(prev => prev.filter(e => e.id !== selectedEntry.id));
+                    deleteEntryRemote(selectedEntry.id);
                 }
             }
         ]);
@@ -270,7 +287,9 @@ export function TodayScreen() {
 
     const handleMoveTo = useCallback((mealType: MealType) => {
         if (!selectedEntry) return;
-        setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, mealType } : e));
+        const updated = { ...selectedEntry, mealType };
+        setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
+        updateEntryRemote(updated);
     }, [selectedEntry]);
 
     const handleToggleFavorite = useCallback(() => {

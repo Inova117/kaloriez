@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signUp = async (email: string, password: string, fullName?: string) => {
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -77,18 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error) throw error;
 
-            if (data.user) {
-                const { error: profileError } = await supabase.from('profiles').insert({
-                    id: data.user.id,
-                    email: data.user.email,
-                    full_name: fullName || null,
-                    daily_calorie_goal: 2000,
-                });
-                // Don't fail the signup, but surface it so a missing profile row
-                // (e.g. blocked by email-confirmation gating) is observable.
-                if (profileError) logger.error('Failed to create profile row on signup', profileError);
-            }
-
+            // The profile row is created server-side by the on_auth_user_created
+            // trigger (see supabase_schema.sql), which works even with email
+            // confirmation enabled. No client-side insert needed.
             return { error: null };
         } catch (error: any) {
             return { error };

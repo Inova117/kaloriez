@@ -8,6 +8,8 @@ import { WeeklyChart } from '../components/WeeklyChart';
 import { WeightTracker } from '../components/WeightTracker';
 import { getLastNDays, formatDateKey } from '../utils/dateUtils';
 import { loadEntriesForDateRange } from '../utils/storageUtils';
+import { fetchEntriesForRange } from '../services/entriesRepository';
+import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -25,13 +27,14 @@ interface DailyStat {
 }
 
 export function StatsScreen({ onClose }: StatsScreenProps) {
+    const { user } = useAuth();
     const [weeklyData, setWeeklyData] = useState<DailyStat[]>([]);
     const [dailyGoal, setDailyGoal] = useState(DEFAULT_GOAL);
     const [averageCalories, setAverageCalories] = useState(0);
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [user?.id]);
 
     const loadData = async () => {
         try {
@@ -40,9 +43,11 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
             const goal = storedGoal ? parseInt(storedGoal) : DEFAULT_GOAL;
             setDailyGoal(goal);
 
-            // Load Last 7 Days
+            // Load Last 7 Days (Supabase source of truth, cache fallback offline)
             const days = getLastNDays(new Date(), 7).reverse(); // Get chronological order
-            const entriesMap = await loadEntriesForDateRange(days);
+            const entriesMap = user
+                ? await fetchEntriesForRange(user.id, days)
+                : await loadEntriesForDateRange(days);
 
             const stats: DailyStat[] = days.map(date => {
                 const dateKey = formatDateKey(date);

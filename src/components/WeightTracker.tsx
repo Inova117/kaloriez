@@ -1,59 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import Svg, { Line, Circle, Text as SvgText } from 'react-native-svg';
-import { logger } from '../utils/logger';
+import { useAuth } from '../contexts/AuthContext';
+import { fetchWeights, saveWeightLocal, upsertWeightRemote, WeightEntry } from '../services/weightRepository';
 
-interface WeightEntry {
-    date: string;
-    weight: number;
-}
-
-const WEIGHT_HISTORY_KEY = '@weight_history';
 const CHART_HEIGHT = 200;
 
 export function WeightTracker() {
+    const { user } = useAuth();
     const { width: windowWidth } = useWindowDimensions();
     const CHART_WIDTH = windowWidth - 64;
-    
+
     const [weightHistory, setWeightHistory] = useState<WeightEntry[]>([]);
     const [isAddingWeight, setIsAddingWeight] = useState(false);
     const [newWeight, setNewWeight] = useState('');
 
     useEffect(() => {
         loadWeightHistory();
-    }, []);
+    }, [user?.id]);
 
     const loadWeightHistory = async () => {
-        try {
-            const saved = await AsyncStorage.getItem(WEIGHT_HISTORY_KEY);
-            if (saved) {
-                setWeightHistory(JSON.parse(saved));
-            }
-        } catch (error) {
-            logger.error('Error loading weight history', error);
-        }
-    };
-
-    const saveWeightHistory = async (history: WeightEntry[]) => {
-        try {
-            await AsyncStorage.setItem(WEIGHT_HISTORY_KEY, JSON.stringify(history));
-            setWeightHistory(history);
-        } catch (error) {
-            logger.error('Error saving weight history', error);
-        }
+        // Supabase is the source of truth; the repository falls back to the
+        // local cache offline.
+        if (!user) return;
+        const history = await fetchWeights(user.id);
+        setWeightHistory(history);
     };
 
     const handleAddWeight = () => {
         const weight = parseFloat(newWeight);
-        
+
         // Validate weight is a number and within reasonable range (30-300 kg)
         if (isNaN(weight)) {
             return;
         }
-        
+
         if (weight < 30 || weight > 300) {
             // Could add Alert here if needed
             return;
@@ -61,14 +44,16 @@ export function WeightTracker() {
 
         const today = new Date().toISOString().split('T')[0];
         const newEntry: WeightEntry = { date: today, weight };
-        
+
         // Remove today's entry if exists and add new one
         const filtered = weightHistory.filter(e => e.date !== today);
-        const updated = [...filtered, newEntry].sort((a, b) => 
+        const updated = [...filtered, newEntry].sort((a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
-        saveWeightHistory(updated);
+        setWeightHistory(updated);
+        saveWeightLocal(updated);
+        if (user) upsertWeightRemote(user.id, today, weight);
         setNewWeight('');
         setIsAddingWeight(false);
     };
