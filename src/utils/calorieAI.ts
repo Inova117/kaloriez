@@ -71,30 +71,28 @@ function extractQuantity(text: string): { quantity: number; unit: string } {
 }
 
 import { getFoodSuggestions } from '../lib/groq';
+import { logger } from './logger';
 
 export async function detectCalories(input: string): Promise<number> {
-    console.log('🔍 Detecting calories for:', input);
-    
+    logger.debug('Detecting calories');
+
     try {
-        // Use real AI to get suggestions
-        console.log('📡 Calling AI API...');
+        // Use real AI to get suggestions (already numerically validated in groq.ts)
         const suggestions = await getFoodSuggestions(input);
 
         if (suggestions && suggestions.length > 0) {
-            console.log('✅ AI returned:', suggestions[0]);
-            return suggestions[0].calories;
+            const aiCalories = Number(suggestions[0].calories);
+            if (Number.isFinite(aiCalories) && aiCalories >= 0) {
+                return Math.round(aiCalories);
+            }
         }
-        
-        console.log('⚠️ AI returned no suggestions, using local fallback');
     } catch (error) {
-        console.error('❌ AI Error:', error);
-        console.log('🔄 Falling back to local database');
+        logger.error('AI calorie detection failed, falling back to local database', error);
     }
 
     // Fallback to local regex if AI fails
     const { quantity, unit } = extractQuantity(input);
-    console.log('📊 Extracted quantity:', quantity, unit);
-    
+
     for (const food of foodDatabase) {
         if (food.pattern.test(input)) {
             let calories = 0;
@@ -103,27 +101,19 @@ export async function detectCalories(input: string): Promise<number> {
             } else {
                 calories = Math.round(food.baseCalories * quantity);
             }
-            console.log('✅ Local match found:', food.pattern, '→', calories, 'cal');
             return calories;
         }
     }
 
-    // Last resort: estimate based on input length and common sense
-    console.warn('⚠️ No match found, using smart estimation');
-    const words = input.toLowerCase().split(/\s+/);
+    // Last resort: estimate based on quantity. NOTE: this is a blind guess; the
+    // UI should signal that the value is an estimate (tracked for a follow-up).
     const hasNumber = /\d+/.test(input);
-    
-    // If user specified a quantity, assume it's a reasonable food item
     if (hasNumber && quantity > 1) {
-        const estimatedCalPerItem = 150; // Conservative estimate
-        const estimated = Math.round(estimatedCalPerItem * quantity);
-        console.log('💡 Smart estimate:', estimated, 'cal for', quantity, 'items');
-        return estimated;
+        const estimatedCalPerItem = 150; // Conservative per-item estimate
+        return Math.round(estimatedCalPerItem * quantity);
     }
-    
-    // Single item or vague description - use moderate estimate
-    const moderateEstimate = 200;
-    console.log('💡 Default estimate:', moderateEstimate, 'cal');
+
+    const moderateEstimate = 200; // Default estimate for a single vague item
     return moderateEstimate;
 }
 

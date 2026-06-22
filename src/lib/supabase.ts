@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
+import { logger } from '../utils/logger';
 
 // Environment variables
 const supabaseUrl = SUPABASE_URL || '';
 const supabaseAnonKey = SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('⚠️ Missing Supabase credentials. Please check your .env file.');
+    logger.warn('⚠️ Missing Supabase credentials. Please check your .env file.');
 }
 
 // Create Supabase client with AsyncStorage for persistence
@@ -16,7 +17,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        // false on native: detectSessionInUrl is a web-only option that parses
+        // the session out of window.location. On React Native it does nothing
+        // useful and can interfere with native deep-link handling.
+        detectSessionInUrl: false,
     },
 });
 

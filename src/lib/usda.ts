@@ -1,6 +1,11 @@
 import { USDA_API_KEY } from '@env';
+import { logger } from '../utils/logger';
 
 const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
+
+// No real food exceeds pure fat (~900 kcal/100g). Anything above this is almost
+// certainly a kilojoule value misread as kcal (1 kJ ≈ 0.239 kcal), so we reject it.
+const MAX_KCAL_PER_100G = 902;
 
 export interface USDANutrition {
     calories: number;        // kcal per 100g
@@ -53,19 +58,34 @@ export async function lookupUSDANutrition(foodName: string): Promise<USDANutriti
             (f: any) => f.dataType === 'Foundation' || f.dataType === 'SR Legacy'
         ) || foods[0];
 
-        // Extract key nutrients from the inline food nutrients
-        const nutrients = preferred.foodNutrients as any[];
-        const get = (name: string): number => {
-            const n = nutrients?.find((n: any) =>
-                n.nutrientName?.toLowerCase().includes(name.toLowerCase())
-            );
+        // Extract key nutrients from the inline food nutrients.
+        const nutrients = (preferred.foodNutrients as any[]) ?? [];
+        const get = (name: string, unit?: string): number => {
+            const n = nutrients.find((n: any) => {
+                const matchesName = n.nutrientName?.toLowerCase().includes(name.toLowerCase());
+                const matchesUnit = unit
+                    ? n.unitName?.toUpperCase() === unit.toUpperCase()
+                    : true;
+                return matchesName && matchesUnit;
+            });
             return n?.value ?? 0;
         };
 
-        const calories = get('Energy') || get('energy');
-        const protein = get('Protein') || get('protein');
-        const fat = get('Total lipid') || get('fat');
-        const carbs = get('Carbohydrate') || get('carbohydrate');
+        // CRITICAL: USDA returns Energy in BOTH kcal and kJ for the same food.
+        // Matching "energy" without checking the unit can grab the kJ row and
+        // inflate calories ~4.18x. Require unitName === 'KCAL' explicitly.
+        const calories = get('Energy', 'KCAL');
+        const protein = get('Protein', 'G');
+        const fat = get('Total lipid', 'G');
+        const carbs = get('Carbohydrate', 'G');
+
+        // If we somehow still get an out-of-range value, treat it as no data so
+        // the caller falls back to the AI estimate rather than logging garbage.
+        if (calories > MAX_KCAL_PER_100G) {
+            logger.warn(`USDA energy out of range for "${foodName}": ${calories} kcal/100g — discarding`);
+            nutritionCache.set(cacheKey, null);
+            return null;
+        }
 
         const result: USDANutrition = {
             calories: Math.round(calories),
@@ -78,7 +98,7 @@ export async function lookupUSDANutrition(foodName: string): Promise<USDANutriti
         nutritionCache.set(cacheKey, result);
         return result;
     } catch (error) {
-        console.error('USDA lookup failed for:', foodName, error);
+        logger.error(`USDA lookup failed for: ${foodName}`, error);
         nutritionCache.set(cacheKey, null);
         return null;
     }

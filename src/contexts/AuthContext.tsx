@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../utils/logger';
 
 interface AuthContextType {
     session: Session | null;
@@ -49,12 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data.user) {
-                await supabase.from('profiles').insert({
+                const { error: profileError } = await supabase.from('profiles').insert({
                     id: data.user.id,
                     email: data.user.email,
                     full_name: fullName || null,
                     daily_calorie_goal: 2000,
                 });
+                // Don't fail the signup, but surface it so a missing profile row
+                // (e.g. blocked by email-confirmation gating) is observable.
+                if (profileError) logger.error('Failed to create profile row on signup', profileError);
             }
 
             return { error: null };
@@ -91,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             await AsyncStorage.multiRemove(keysToRemove);
         } catch (error) {
-            console.error('Error clearing session data:', error);
+            logger.error('Error clearing session data', error);
         }
     };
 

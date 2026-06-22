@@ -1,60 +1,60 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 import { FoodEntry } from '../types';
 
-const ENTRIES_STORAGE_KEY = '@food_entries';
+// The app stores entries under per-date keys ('@entries_<YYYY-MM-DD>'), so the
+// migration must enumerate those — the old single '@food_entries' key was never
+// written by anything and silently migrated nothing.
+const ENTRIES_PREFIX = '@entries_';
 const GOAL_STORAGE_KEY = '@daily_goal';
-const USER_PROFILE_KEY = '@user_profile';
 
 export async function migrateLocalDataToSupabase(userId: string): Promise<void> {
     try {
-        const [entriesJson, goalJson, profileJson] = await Promise.all([
-            AsyncStorage.getItem(ENTRIES_STORAGE_KEY),
-            AsyncStorage.getItem(GOAL_STORAGE_KEY),
-            AsyncStorage.getItem(USER_PROFILE_KEY),
-        ]);
-
-        if (profileJson) {
-            const profile = JSON.parse(profileJson);
-            const goal = goalJson ? parseInt(goalJson) : 2000;
-
-            await supabase
+        // 1. Daily calorie goal
+        const goalJson = await AsyncStorage.getItem(GOAL_STORAGE_KEY);
+        const goal = goalJson ? parseInt(goalJson, 10) : NaN;
+        if (Number.isFinite(goal) && goal > 0) {
+            const { error } = await supabase
                 .from('profiles')
-                .update({
-                    daily_calorie_goal: goal,
-                    updated_at: new Date().toISOString(),
-                })
+                .update({ daily_calorie_goal: goal, updated_at: new Date().toISOString() })
                 .eq('id', userId);
+            if (error) logger.error('Error migrating daily goal', error);
         }
 
-        if (entriesJson) {
-            const entries: FoodEntry[] = JSON.parse(entriesJson);
-            
-            if (entries.length > 0) {
-                const foodEntries = entries.map(entry => ({
+        // 2. Food entries — collected from every per-date bucket.
+        const allKeys = await AsyncStorage.getAllKeys();
+        const entryKeys = allKeys.filter(k => k.startsWith(ENTRIES_PREFIX));
+
+        const rows: Array<Record<string, unknown>> = [];
+        for (const key of entryKeys) {
+            const raw = await AsyncStorage.getItem(key);
+            if (!raw) continue;
+            let entries: FoodEntry[] = [];
+            try {
+                entries = JSON.parse(raw);
+            } catch {
+                continue;
+            }
+            for (const entry of entries) {
+                rows.push({
                     user_id: userId,
                     name: entry.name,
                     calories: entry.calories,
                     meal_type: entry.mealType,
                     is_favorite: entry.isFavorite || false,
-                    timestamp: entry.timestamp,
-                }));
-
-                const { error } = await supabase
-                    .from('food_entries')
-                    .insert(foodEntries);
-
-                if (error) {
-                    console.error('Error migrating food entries:', error);
-                } else {
-                    console.log(`✅ Migrated ${entries.length} food entries to Supabase`);
-                }
+                    timestamp: new Date(entry.timestamp).toISOString(),
+                });
             }
         }
 
-        console.log('✅ Data migration completed successfully');
+        if (rows.length > 0) {
+            const { error } = await supabase.from('food_entries').insert(rows);
+            if (error) logger.error('Error migrating food entries', error);
+            else logger.debug(`Migrated ${rows.length} food entries to Supabase`);
+        }
     } catch (error) {
-        console.error('Error during data migration:', error);
+        logger.error('Error during data migration', error);
         throw error;
     }
 }
@@ -90,7 +90,7 @@ export async function loadUserDataFromSupabase(userId: string): Promise<{
 
         return { entries, dailyGoal };
     } catch (error) {
-        console.error('Error loading user data from Supabase:', error);
+        logger.error('Error loading user data from Supabase', error);
         return { entries: [], dailyGoal: 2000 };
     }
 }
@@ -117,7 +117,7 @@ export async function saveFoodEntryToSupabase(
 
         return data?.id || null;
     } catch (error) {
-        console.error('Error saving food entry:', error);
+        logger.error('Error saving food entry', error);
         return null;
     }
 }
@@ -133,7 +133,7 @@ export async function deleteFoodEntryFromSupabase(entryId: string): Promise<bool
 
         return true;
     } catch (error) {
-        console.error('Error deleting food entry:', error);
+        logger.error('Error deleting food entry', error);
         return false;
     }
 }
@@ -155,7 +155,7 @@ export async function updateDailyGoalInSupabase(
 
         return true;
     } catch (error) {
-        console.error('Error updating daily goal:', error);
+        logger.error('Error updating daily goal', error);
         return false;
     }
 }

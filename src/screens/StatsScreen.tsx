@@ -8,6 +8,7 @@ import { WeeklyChart } from '../components/WeeklyChart';
 import { WeightTracker } from '../components/WeightTracker';
 import { getLastNDays, formatDateKey } from '../utils/dateUtils';
 import { loadEntriesForDateRange } from '../utils/storageUtils';
+import { logger } from '../utils/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GOAL_STORAGE_KEY = '@daily_goal';
@@ -58,12 +59,14 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
 
             setWeeklyData(stats);
 
-            // Calculate Average
-            const total = stats.reduce((sum, d) => sum + d.calories, 0);
-            setAverageCalories(Math.round(total / stats.length));
+            // Average only over days that were actually logged, so a new user
+            // with 2 of 7 days filled is not shown an artificially deflated mean.
+            const loggedDays = stats.filter(d => d.calories > 0);
+            const total = loggedDays.reduce((sum, d) => sum + d.calories, 0);
+            setAverageCalories(loggedDays.length ? Math.round(total / loggedDays.length) : 0);
 
         } catch (error) {
-            console.error('Failed to load stats:', error);
+            logger.error('Failed to load stats', error);
         }
     };
 

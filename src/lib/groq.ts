@@ -2,13 +2,25 @@ import Groq from 'groq-sdk';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '@env';
 import * as FileSystem from 'expo-file-system';
 import { getCaloriesFromUSDA } from './usda';
+import { logger } from '../utils/logger';
+
+// Upper bound for a single logged item's calories. Guards against a model
+// returning an absurd value (or a string that coerces oddly) poisoning totals.
+const MAX_ENTRY_CALORIES = 20000;
+
+/** Coerce an untrusted model numeric field to a safe, finite, non-negative integer or null. */
+function toSafeCalories(value: unknown): number | null {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0 || n > MAX_ENTRY_CALORIES) return null;
+    return Math.round(n);
+}
 
 // Environment variables
 const geminiApiKey = GEMINI_API_KEY || '';
 const geminiModel = GEMINI_MODEL || 'gemini-2.5-flash';
 
 if (!geminiApiKey) {
-    console.error('⚠️ Missing Gemini API key. Please check your .env file.');
+    logger.warn('⚠️ Missing Gemini API key. Please check your .env file.');
 }
 
 // Initialize Groq client
@@ -32,10 +44,9 @@ export interface FoodSuggestion {
  *   3. Falls back to Gemini estimate if USDA has no data
  */
 export async function getFoodSuggestions(query: string): Promise<FoodSuggestion[]> {
-    console.log('🤖 getFoodSuggestions called with query:', query);
-    
+    logger.debug('getFoodSuggestions called');
+
     try {
-        console.log('📞 Creating Gemini API request...');
         const completion = await groq.chat.completions.create({
             messages: [
                 {
@@ -72,177 +83,50 @@ RULES:
         });
 
         const response = completion.choices[0]?.message?.content || '[]';
-        console.log('📥 Raw AI response:', response);
-        
         const cleanResponse = response.replace(/```json/g, '').replace(/```/g, '').trim();
-        console.log('🧹 Cleaned response:', cleanResponse);
 
         let suggestions: any[] = [];
         try {
-            suggestions = JSON.parse(cleanResponse);
-            console.log('✅ Parsed suggestions:', suggestions);
+            const parsed = JSON.parse(cleanResponse);
+            suggestions = Array.isArray(parsed) ? parsed : [];
         } catch (parseError) {
-            console.error('❌ Failed to parse AI response:', parseError);
-            console.error('Response was:', cleanResponse);
+            logger.error('Failed to parse AI response', parseError);
             return [];
         }
 
-        // Step 2: Enrich each suggestion with USDA ground-truth calories if available
-        console.log('🔍 Enriching with USDA data...');
+        // Step 2: Enrich each suggestion with USDA ground-truth calories if available.
+        // All numeric fields coming from the model are untrusted, so coerce/validate
+        // them here at the boundary before they can ever reach the daily total.
         const enriched = await Promise.all(
             suggestions.map(async (s: any) => {
-                const portionGrams: number = s.portionGrams || 100;
-                console.log(`📊 Looking up USDA data for: ${s.name} (${portionGrams}g)`);
-                const usdaCalories = await getCaloriesFromUSDA(s.name, portionGrams);
+                const portionRaw = Number(s.portionGrams);
+                const portionGrams = Number.isFinite(portionRaw) && portionRaw > 0 ? portionRaw : 100;
 
-                const result = {
-                    name: s.name,
-                    calories: usdaCalories ?? s.calories, // Prefer USDA, fallback to AI
+                const usdaCalories = await getCaloriesFromUSDA(s.name, portionGrams);
+                const aiCalories = toSafeCalories(s.calories);
+                const finalCalories = usdaCalories ?? aiCalories;
+
+                // Drop suggestions we cannot attach a trustworthy number to.
+                if (finalCalories === null) {
+                    logger.warn('Dropping AI suggestion with invalid calories');
+                    return null;
+                }
+
+                const name = String(s.name ?? '').trim() || 'Food';
+                return {
+                    name,
+                    calories: finalCalories,
                     description: s.description
-                        ? `${s.description}${usdaCalories ? ' (USDA verified)' : ' (AI estimate)'}`
+                        ? `${s.description}${usdaCalories != null ? ' (USDA verified)' : ' (AI estimate)'}`
                         : undefined,
                 } as FoodSuggestion;
-                
-                console.log(`✅ Enriched result:`, result);
-                return result;
             })
         );
 
-        console.log('🎉 Final enriched suggestions:', enriched);
-        return enriched;
+        return enriched.filter((e): e is FoodSuggestion => e !== null);
     } catch (error) {
-        console.error('❌ AI API error:', error);
-        if (error instanceof Error) {
-            console.error('Error details:', error.message, error.stack);
-        }
+        logger.error('AI API error in getFoodSuggestions', error);
         return [];
-    }
-}
-
-/**
- * Analyze a food image and return nutritional information
- */
-export async function analyzeFoodImage(imageDescription: string): Promise<any> {
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a nutrition expert. Based on the description of a food image, estimate:
-1. What food items are present
-2. Approximate portion sizes
-3. Total estimated calories
-4. Macronutrient breakdown (protein, carbs, fats)
-
-Return as JSON: {"foods": [...], "totalCalories": number, "macros": {...}}`,
-                },
-                {
-                    role: 'user',
-                    content: `Analyze this food: ${imageDescription}`,
-                },
-            ],
-            model: geminiModel,
-            temperature: 0.5,
-            max_tokens: 400,
-        });
-
-        const response = completion.choices[0]?.message?.content || '{}';
-        return JSON.parse(response);
-    } catch (error) {
-        console.error('Groq image analysis error:', error);
-        throw new Error('Failed to analyze food image');
-    }
-}
-
-/**
- * Get personalized meal suggestions based on user's daily intake
- */
-export async function getMealSuggestions(
-    currentCalories: number,
-    dailyGoal: number,
-    mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks'
-): Promise<string[]> {
-    const remaining = dailyGoal - currentCalories;
-
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a nutrition coach. Suggest healthy meal options based on the user's calorie budget.
-Return as JSON array: [{"name": "Food name", "calories": number, "reason": "why it's a good choice"}]`,
-                },
-                {
-                    role: 'user',
-                    content: `Suggest 3-5 ${mealType} options. I have ${remaining} calories remaining out of ${dailyGoal} daily goal.`,
-                },
-            ],
-            model: geminiModel,
-            temperature: 0.8,
-            max_tokens: 400,
-        });
-
-        const response = completion.choices[0]?.message?.content || '[]';
-        return JSON.parse(response);
-    } catch (error) {
-        console.error('Groq meal suggestions error:', error);
-        throw new Error('Failed to get meal suggestions');
-    }
-}
-
-/**
- * Shorten a food name to be more concise and readable
- * Example: "2 large eggs cooked in 1 tsp butter (AI estimate)" → "2 Eggs"
- */
-export async function shortenFoodName(foodName: string): Promise<string> {
-    try {
-        console.log('✂️ Shortening food name:', foodName);
-        
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a text simplifier. Your job is to shorten food names to be concise and readable.
-
-RULES:
-- Keep quantity numbers (e.g., "2", "12", "1 cup")
-- Remove unnecessary details like cooking method, portion descriptions, source labels
-- Keep it under 25 characters if possible
-- Use title case
-- Remove parenthetical notes like "(AI estimate)" or "(USDA verified)"
-- Examples:
-  * "2 large eggs cooked in 1 tsp butter (AI estimate)" → "2 Eggs"
-  * "12 KFC chicken wings, fried (AI estimate)" → "12 KFC Wings"
-  * "1 scoop whey protein powder (USDA verified)" → "Whey Protein"
-  * "Honey BBQ sauce, 1 tablespoon" → "Honey BBQ Sauce"
-
-Return ONLY the shortened name, nothing else.`,
-                },
-                {
-                    role: 'user',
-                    content: foodName,
-                },
-            ],
-            model: geminiModel,
-            temperature: 0.3,
-            max_tokens: 50,
-        });
-
-        const shortened = completion.choices[0]?.message?.content?.trim() || foodName;
-        console.log('✅ Shortened to:', shortened);
-        
-        // Fallback: if AI returns something too long or fails, truncate manually
-        if (shortened.length > 35) {
-            const truncated = foodName.substring(0, 30) + '...';
-            console.log('⚠️ AI result too long, truncating:', truncated);
-            return truncated;
-        }
-        
-        return shortened;
-    } catch (error) {
-        console.error('❌ Failed to shorten name:', error);
-        // Fallback: simple truncation
-        return foodName.length > 35 ? foodName.substring(0, 30) + '...' : foodName;
     }
 }
 
@@ -303,8 +187,6 @@ RULES:
         );
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Gemini API Error details:', errorText);
             throw new Error(`Gemini API responded with status ${response.status}`);
         }
 
@@ -321,11 +203,11 @@ RULES:
             const suggestions = JSON.parse(cleanResponse);
             return suggestions;
         } catch (parseError) {
-            console.error('Failed to parse Gemini audio response:', parseError);
+            logger.error('Failed to parse Gemini audio response', parseError);
             return [];
         }
     } catch (error) {
-        console.error('Audio processing error:', error);
+        logger.error('Audio processing error', error);
         return [];
     }
 }

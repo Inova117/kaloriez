@@ -19,6 +19,7 @@ import { colors } from '../theme/colors';
 import { UserProfile, calculateDailyCalorieGoal } from '../utils/nutritionCalculator';
 import { useAuth } from '../contexts/AuthContext';
 import { updateDailyGoalInSupabase } from '../services/dataMigration';
+import { logger } from '../utils/logger';
 
 export const HAS_COMPLETED_ONBOARDING_KEY = '@has_completed_onboarding';
 export const USER_PROFILE_KEY = '@user_profile';
@@ -56,7 +57,7 @@ export function OnboardingScreen({ onComplete, isEditing = false }: OnboardingSc
                 setWeightGoal(profile.weightGoal);
             }
         } catch (error) {
-            console.error('Failed to load profile', error);
+            logger.error('Failed to load profile', error);
         } finally {
             setIsLoading(false);
         }
@@ -102,7 +103,7 @@ export function OnboardingScreen({ onComplete, isEditing = false }: OnboardingSc
                 [{ text: "Awesome!", onPress: onComplete }]
             );
         } catch (error) {
-            console.error('Failed to save onboarding data', error);
+            logger.error('Failed to save onboarding data', error);
             Alert.alert('Error', 'Something went wrong while saving your profile.');
         }
     };

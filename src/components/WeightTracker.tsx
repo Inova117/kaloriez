@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import Svg, { Line, Circle, Text as SvgText } from 'react-native-svg';
+import { logger } from '../utils/logger';
 
 interface WeightEntry {
     date: string;
@@ -32,7 +33,7 @@ export function WeightTracker() {
                 setWeightHistory(JSON.parse(saved));
             }
         } catch (error) {
-            console.error('Error loading weight history:', error);
+            logger.error('Error loading weight history', error);
         }
     };
 
@@ -41,7 +42,7 @@ export function WeightTracker() {
             await AsyncStorage.setItem(WEIGHT_HISTORY_KEY, JSON.stringify(history));
             setWeightHistory(history);
         } catch (error) {
-            console.error('Error saving weight history:', error);
+            logger.error('Error saving weight history', error);
         }
     };
 

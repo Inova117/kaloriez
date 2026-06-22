@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 import { colors } from '../theme/colors';
 
 interface ProfileScreenProps {
@@ -34,7 +36,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 setTempGoal(saved);
             }
         } catch (error) {
-            console.error('Error loading weekly goal:', error);
+            logger.error('Error loading weekly goal', error);
         }
     };
 
@@ -44,9 +46,11 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
             setWeeklyGoal(tempGoal);
             setIsEditingGoal(false);
         } catch (error) {
-            console.error('Error saving weekly goal:', error);
+            logger.error('Error saving weekly goal', error);
         }
     };
+
+    const [isSavingPassword, setIsSavingPassword] = useState(false);
 
     const handleChangePassword = async () => {
         if (newPassword !== confirmPassword) {
@@ -54,17 +58,30 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
             return;
         }
 
-        if (newPassword.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
+        // Keep in sync with the sign-up rule (8 chars).
+        if (newPassword.length < 8) {
+            Alert.alert('Error', 'Password must be at least 8 characters');
             return;
         }
 
-        // TODO: Implement password change with Supabase
-        Alert.alert('Success', 'Password changed successfully');
-        setIsChangingPassword(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        setIsSavingPassword(true);
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) {
+                Alert.alert('Error', error.message);
+                return;
+            }
+            Alert.alert('Success', 'Password changed successfully');
+            setIsChangingPassword(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error) {
+            logger.error('Password change failed', error);
+            Alert.alert('Error', 'Could not change password. Please try again.');
+        } finally {
+            setIsSavingPassword(false);
+        }
     };
 
     const handleLogout = () => {
@@ -144,11 +161,14 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                                 value={confirmPassword}
                                 onChangeText={setConfirmPassword}
                             />
-                            <Pressable 
-                                style={styles.saveButton}
+                            <Pressable
+                                style={[styles.saveButton, isSavingPassword && { opacity: 0.6 }]}
                                 onPress={handleChangePassword}
+                                disabled={isSavingPassword}
                             >
-                                <Text style={styles.saveButtonText}>Change Password</Text>
+                                <Text style={styles.saveButtonText}>
+                                    {isSavingPassword ? 'Changing…' : 'Change Password'}
+                                </Text>
                             </Pressable>
                         </View>
                     )}

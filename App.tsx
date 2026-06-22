@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, Pressable, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MainApp } from './src/screens/MainApp';
 import { OnboardingScreen, HAS_COMPLETED_ONBOARDING_KEY } from './src/screens/OnboardingScreen';
@@ -10,20 +10,20 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { migrateLocalDataToSupabase } from './src/services/dataMigration';
 import { supabase } from './src/lib/supabase';
 import { colors } from './src/theme/colors';
+import { logger } from './src/utils/logger';
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
   dsn: 'https://baaa3819c6e3a90d23939d1971475e92@o4510757466406912.ingest.us.sentry.io/4510757486264320',
 
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
+  // This is a health app handling diet/weight data. Do NOT attach IP/identity
+  // PII by default, and only stream verbose logs in development.
+  sendDefaultPii: false,
+  enableLogs: __DEV__,
 
-  // Enable Logs
-  enableLogs: true,
-
-  // Configure Session Replay
-  replaysSessionSampleRate: 0.1,
+  // Session Replay (text/images are masked by default in the RN SDK). Only
+  // capture on errors to minimise data collection until a consent flow exists.
+  replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1,
   integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
 
@@ -34,17 +34,18 @@ Sentry.init({
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
   const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
-  const [migrating, setMigrating] = useState(false);
 
+  // Depend on user?.id (a stable string) rather than the user object, so routine
+  // TOKEN_REFRESHED auth events don't re-run onboarding checks / migration.
   useEffect(() => {
     checkOnboardingStatus();
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (user && hasOnboarded) {
       handleDataMigration();
     }
-  }, [user, hasOnboarded]);
+  }, [user?.id, hasOnboarded]);
 
   const checkOnboardingStatus = async () => {
     try {
@@ -69,23 +70,26 @@ function AppContent() {
       const status = await AsyncStorage.getItem(HAS_COMPLETED_ONBOARDING_KEY);
       setHasOnboarded(status === 'true');
     } catch (error) {
-      console.error('Error checking onboarding status', error);
+      logger.error('Error checking onboarding status', error);
       setHasOnboarded(false);
     }
   };
 
   const handleDataMigration = async () => {
+    if (!user) return;
+    // Run once per user. Runs in the background so it never blocks the UI.
+    const flagKey = `@migrated_v1_${user.id}`;
     try {
-      setMigrating(true);
-      await migrateLocalDataToSupabase(user!.id);
+      const alreadyMigrated = await AsyncStorage.getItem(flagKey);
+      if (alreadyMigrated) return;
+      await migrateLocalDataToSupabase(user.id);
+      await AsyncStorage.setItem(flagKey, 'true');
     } catch (error) {
-      console.error('Migration error:', error);
-    } finally {
-      setMigrating(false);
+      logger.error('Migration error', error);
     }
   };
 
-  if (authLoading || hasOnboarded === null || migrating) {
+  if (authLoading || hasOnboarded === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -104,12 +108,28 @@ function AppContent() {
   return <MainApp />;
 }
 
+function ErrorFallback({ resetError }: { resetError: () => void }) {
+  return (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorTitle}>Something went wrong</Text>
+      <Text style={styles.errorMessage}>
+        The app ran into an unexpected problem. Your saved data is safe.
+      </Text>
+      <Pressable style={styles.errorButton} onPress={resetError}>
+        <Text style={styles.errorButtonText}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default Sentry.wrap(function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <StatusBar style="dark" />
-        <AppContent />
+        <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}>
+          <AppContent />
+        </Sentry.ErrorBoundary>
       </AuthProvider>
     </SafeAreaProvider>
   );
@@ -121,5 +141,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: colors.background,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  errorButton: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  errorButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textInverse,
   },
 });

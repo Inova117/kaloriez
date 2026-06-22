@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { MealType, MEAL_CONFIGS } from '../types';
+import { logger } from '../utils/logger';
 
 const FAVORITES_STORAGE_KEY = '@favorite_items';
 
@@ -50,7 +51,7 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                 setFavorites(JSON.parse(stored));
             }
         } catch (error) {
-            console.error('Failed to load favorites:', error);
+            logger.error('Failed to load favorites', error);
         }
     };
 
@@ -59,7 +60,7 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
             await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(items));
             setFavorites(items);
         } catch (error) {
-            console.error('Failed to save favorites:', error);
+            logger.error('Failed to save favorites', error);
         }
     };
 

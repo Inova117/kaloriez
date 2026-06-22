@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FoodEntry } from '../types';
 import { formatDateKey } from './dateUtils';
+import { logger } from './logger';
 
 const ENTRIES_PREFIX = '@entries_';
 
@@ -12,7 +13,7 @@ export async function saveEntriesForDate(date: Date, entries: FoodEntry[]): Prom
     try {
         await AsyncStorage.setItem(key, JSON.stringify(entries));
     } catch (error) {
-        console.error('Failed to save entries:', error);
+        logger.error('Failed to save entries', error);
     }
 }
 
@@ -32,7 +33,7 @@ export async function loadEntriesForDate(date: Date): Promise<FoodEntry[]> {
             }));
         }
     } catch (error) {
-        console.error('Failed to load entries:', error);
+        logger.error('Failed to load entries', error);
     }
     return [];
 }
@@ -47,7 +48,7 @@ export async function getDatesWithEntries(): Promise<Set<string>> {
         const dates = entryKeys.map(key => key.replace(ENTRIES_PREFIX, ''));
         return new Set(dates);
     } catch (error) {
-        console.error('Failed to get dates with entries:', error);
+        logger.error('Failed to get dates with entries', error);
         return new Set();
     }
 }
@@ -76,6 +77,6 @@ export async function deleteEntriesForDate(date: Date): Promise<void> {
     try {
         await AsyncStorage.removeItem(key);
     } catch (error) {
-        console.error('Failed to delete entries:', error);
+        logger.error('Failed to delete entries', error);
     }
 }

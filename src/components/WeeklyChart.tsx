@@ -24,7 +24,10 @@ interface WeeklyChartProps {
 const CHART_HEIGHT = 200;
 
 export function WeeklyChart({ data, dailyGoal }: WeeklyChartProps) {
-    const maxCalories = Math.max(...data.map(d => d.calories), dailyGoal * 1.2); // Ensure goal is visible
+    // Guard against a 0/NaN divisor (corrupt goal or all-empty week) which would
+    // produce Infinity/NaN bar heights. The trailing `1` keeps maxCalories > 0.
+    const safeGoal = Number.isFinite(dailyGoal) && dailyGoal > 0 ? dailyGoal : 0;
+    const maxCalories = Math.max(...data.map(d => d.calories), safeGoal * 1.2, 1); // Ensure goal is visible
 
     return (
         <View style={styles.container}>
@@ -106,8 +109,7 @@ function Bar({ item, maxCalories, index, isGoalMet }: {
                 {item.dayLabel}
             </Text>
             <Text style={styles.valueLabel}>
-                {item.calories > 0 ? Math.round(item.calories / 13) : ''}
-                {/* Mocking a mini value or just dot? No, let's keep it clean, maybe just label */}
+                {item.calories > 0 ? item.calories : ''}
             </Text>
         </View>
     );

@@ -21,6 +21,7 @@ import { detectCalories } from '../utils/calorieAI';
 import { getMealTypeFromTime } from '../utils/mealUtils';
 import { formatDateKey, isToday } from '../utils/dateUtils';
 import { saveEntriesForDate, loadEntriesForDate, getDatesWithEntries } from '../utils/storageUtils';
+import { logger } from '../utils/logger';
 
 const GOAL_STORAGE_KEY = '@daily_goal';
 const DEFAULT_GOAL = 2000;
@@ -41,7 +42,7 @@ export function TodayScreen() {
     const [expandedSections, setExpandedSections] = useState<Set<MealType>>(new Set(['breakfast', 'lunch', 'dinner', 'snacks']));
     const [focusTrigger, setFocusTrigger] = useState(0);
 
-    const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
+    const totalCalories = entries.reduce((sum, entry) => sum + (Number(entry.calories) || 0), 0);
 
     // Group entries by meal type
     const entriesByMeal = useMemo(() => {
@@ -139,7 +140,7 @@ export function TodayScreen() {
             setEntries(loaded);
             setHasReachedGoal(false);
         } catch (error) {
-            console.error('Failed to load entries:', error);
+            logger.error('Failed to load entries', error);
             setEntries([]);
         }
     };
@@ -152,11 +153,12 @@ export function TodayScreen() {
     const loadDailyGoal = async () => {
         try {
             const stored = await AsyncStorage.getItem(GOAL_STORAGE_KEY);
-            if (stored) {
-                setDailyGoal(parseInt(stored));
+            const parsed = stored ? parseInt(stored, 10) : NaN;
+            if (Number.isFinite(parsed) && parsed > 0) {
+                setDailyGoal(parsed);
             }
         } catch (error) {
-            console.error('Failed to load goal:', error);
+            logger.error('Failed to load goal', error);
         }
     };
 
@@ -165,7 +167,7 @@ export function TodayScreen() {
             await AsyncStorage.setItem(GOAL_STORAGE_KEY, goal.toString());
             setDailyGoal(goal);
         } catch (error) {
-            console.error('Failed to save goal:', error);
+            logger.error('Failed to save goal', error);
         }
     };
 
@@ -221,7 +223,7 @@ export function TodayScreen() {
             setEntries(prev => [newEntry, ...prev]);
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } catch (error) {
-            console.error('Failed to add quick item:', error);
+            logger.error('Failed to add quick item', error);
         }
     }, [currentDate]);
 
@@ -240,17 +242,15 @@ export function TodayScreen() {
         setTimeout(() => setEditModalVisible(true), 100);
     };
 
-    const handleSaveEdit = async (newName: string) => {
-        if (selectedEntry && newName) {
-            try {
-                const calories = await detectCalories(newName);
-                setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, name: newName.trim(), calories } : e));
-            } catch (error) {
-                console.error('Failed to detect calories:', error);
-                // Keep original calories if detection fails
-                setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, name: newName.trim() } : e));
-            }
-        }
+    const handleSaveEdit = (newName: string, newCalories: number) => {
+        if (!selectedEntry) return;
+        const trimmed = newName.trim();
+        // Honour the calories the user explicitly typed instead of re-estimating
+        // them from the name (which silently discarded their correction).
+        if (!trimmed || !Number.isFinite(newCalories) || newCalories <= 0) return;
+        setEntries(prev => prev.map(e =>
+            e.id === selectedEntry.id ? { ...e, name: trimmed, calories: Math.round(newCalories) } : e
+        ));
     };
 
     const handleDelete = useCallback(async () => {

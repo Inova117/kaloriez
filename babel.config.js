@@ -3,13 +3,15 @@ module.exports = function (api) {
     return {
         presets: ['babel-preset-expo'],
         plugins: [
-            'react-native-reanimated/plugin',
             ['module:react-native-dotenv', {
                 moduleName: '@env',
                 path: '.env',
                 safe: false,
                 allowUndefined: true,
             }],
+            // Reanimated's plugin MUST be listed last so it transforms worklets
+            // after every other plugin has run.
+            'react-native-reanimated/plugin',
         ],
     };
 };

@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { ProcessingState } from '../types';
+import { logger } from '../utils/logger';
 
 interface InputBarProps {
     onSubmit: (text: string) => void;
@@ -126,7 +127,7 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
             setRecording(recording);
             setIsRecording(true);
         } catch (err) {
-            console.error('Failed to start recording', err);
+            logger.error('Failed to start recording', err);
         }
     };
 
@@ -152,7 +153,7 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                 onAudioRecorded(uri);
             }
         } catch (error) {
-            console.error('Failed to stop recording', error);
+            logger.error('Failed to stop recording', error);
         }
     };
 
