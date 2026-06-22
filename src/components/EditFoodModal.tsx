@@ -76,13 +76,13 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
 
                 <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
                     <View style={styles.content}>
-                        <Text style={styles.title}>Edit Food</Text>
+                        <Text style={styles.title}>Editar comida</Text>
 
                         <TextInput
                             style={styles.input}
                             value={text}
                             onChangeText={setText}
-                            placeholder="Food name"
+                            placeholder="Nombre"
                             placeholderTextColor={colors.textDimmed}
                             autoFocus
                             selectionColor={colors.accent}
@@ -92,7 +92,7 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
                             style={styles.input}
                             value={calories}
                             onChangeText={setCalories}
-                            placeholder="Calories"
+                            placeholder="Calorías"
                             placeholderTextColor={colors.textDimmed}
                             keyboardType="numeric"
                             onSubmitEditing={handleSave}
@@ -101,11 +101,11 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
 
                         <View style={styles.buttons}>
                             <Pressable style={styles.button} onPress={onClose}>
-                                <Text style={styles.cancelText}>Cancel</Text>
+                                <Text style={styles.cancelText}>Cancelar</Text>
                             </Pressable>
                             <View style={styles.divider} />
                             <Pressable style={styles.button} onPress={handleSave}>
-                                <Text style={styles.saveText}>Save</Text>
+                                <Text style={styles.saveText}>Guardar</Text>
                             </Pressable>
                         </View>
                     </View>

@@ -20,11 +20,11 @@ interface CalendarModalProps {
 }
 
 const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const DAYS = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 
 export function CalendarModal({
     visible,
@@ -155,7 +155,7 @@ export function CalendarModal({
                     </View>
 
                     <Pressable style={styles.closeButton} onPress={onClose}>
-                        <Text style={styles.closeText}>Close</Text>
+                        <Text style={styles.closeText}>Cerrar</Text>
                     </Pressable>
                 </View>
             </Animated.View>

@@ -114,17 +114,17 @@ export function FoodMenu({
                     <View style={styles.divider} />
 
                     <Pressable style={styles.menuItem} onPress={onEdit}>
-                        <Text style={styles.menuItemText}>Edit</Text>
+                        <Text style={styles.menuItemText}>Editar</Text>
                     </Pressable>
 
                     <Pressable style={styles.menuItem} onPress={onToggleFavorite}>
                         <Text style={styles.menuItemText}>
-                            {entry.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                            {entry.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                         </Text>
                     </Pressable>
 
                     <View style={styles.sectionDivider}>
-                        <Text style={styles.sectionLabel}>Move to</Text>
+                        <Text style={styles.sectionLabel}>Mover a</Text>
                     </View>
 
                     {MEAL_TYPES.map((mealType) => {
@@ -154,13 +154,13 @@ export function FoodMenu({
                     <View style={styles.spacer} />
 
                     <Pressable style={styles.menuItem} onPress={onDelete}>
-                        <Text style={[styles.menuItemText, styles.deleteText]}>Delete</Text>
+                        <Text style={[styles.menuItemText, styles.deleteText]}>Eliminar</Text>
                     </Pressable>
 
                     <View style={styles.spacer} />
 
                     <Pressable style={styles.menuItem} onPress={onClose}>
-                        <Text style={[styles.menuItemText, styles.cancelText]}>Cancel</Text>
+                        <Text style={[styles.menuItemText, styles.cancelText]}>Cancelar</Text>
                     </Pressable>
                 </ScrollView>
             </Animated.View>

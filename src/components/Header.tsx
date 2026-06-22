@@ -38,10 +38,10 @@ export function Header({
                         onPress={onTodayPress}
                         style={styles.todayButton}
                         accessibilityRole="button"
-                        accessibilityLabel="Go to today"
+                        accessibilityLabel="Ir a hoy"
                     >
                         <Ionicons name="arrow-undo-outline" size={14} color={colors.accent} />
-                        <Text style={styles.todayText}>Today</Text>
+                        <Text style={styles.todayText}>Hoy</Text>
                     </Pressable>
                 ) : (
                     <View style={{ width: 60 }} />
@@ -51,7 +51,7 @@ export function Header({
                     onPress={onDatePress}
                     style={styles.dateButton}
                     accessibilityRole="button"
-                    accessibilityLabel={`Change date, currently ${dateDisplay}`}
+                    accessibilityLabel={`Cambiar fecha, actualmente ${dateDisplay}`}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                     <View style={styles.dateRow}>
@@ -65,7 +65,7 @@ export function Header({
                         onPress={onStatsPress}
                         style={styles.statsButton}
                         accessibilityRole="button"
-                        accessibilityLabel="Statistics"
+                        accessibilityLabel="Progreso"
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                         <Ionicons name="stats-chart" size={20} color={colors.textSecondary} />
@@ -75,7 +75,7 @@ export function Header({
                             onPress={onLogoutPress}
                             style={styles.logoutButton}
                             accessibilityRole="button"
-                            accessibilityLabel="Sign out"
+                            accessibilityLabel="Cerrar sesión"
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
@@ -94,7 +94,7 @@ export function Header({
                     <Pressable
                         onPress={onGoalPress}
                         accessibilityRole="button"
-                        accessibilityLabel={`Daily goal ${dailyGoal} kilocalories, edit`}
+                        accessibilityLabel={`Meta diaria ${dailyGoal} kilocalorías, editar`}
                         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
                         <Text style={styles.goal}>{dailyGoal}</Text>

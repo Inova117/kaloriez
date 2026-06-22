@@ -62,8 +62,8 @@ export function WeightTracker() {
         if (weightHistory.length === 0) {
             return (
                 <View style={styles.emptyChart}>
-                    <Text style={styles.emptyText}>No weight data yet</Text>
-                    <Text style={styles.emptySubtext}>Start tracking your progress</Text>
+                    <Text style={styles.emptyText}>Aún no hay datos de peso</Text>
+                    <Text style={styles.emptySubtext}>Empieza a registrar tu progreso</Text>
                 </View>
             );
         }
@@ -156,7 +156,7 @@ export function WeightTracker() {
                 {/* Current weight display */}
                 {weightHistory.length > 0 && (
                     <View style={styles.currentWeight}>
-                        <Text style={styles.currentWeightLabel}>Current</Text>
+                        <Text style={styles.currentWeightLabel}>Actual</Text>
                         <Text style={styles.currentWeightValue}>
                             {weightHistory[weightHistory.length - 1].weight} kg
                         </Text>
@@ -174,7 +174,7 @@ export function WeightTracker() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.title}>Weight Progress</Text>
+                    <Text style={styles.title}>Progreso de peso</Text>
                     {weightChange !== null && (
                         <Text style={[
                             styles.change,
@@ -188,7 +188,7 @@ export function WeightTracker() {
                     style={styles.addButton}
                     onPress={() => setIsAddingWeight(!isAddingWeight)}
                     accessibilityRole="button"
-                    accessibilityLabel={isAddingWeight ? 'Cancel adding weight' : 'Add weight entry'}
+                    accessibilityLabel={isAddingWeight ? 'Cancelar' : 'Agregar peso'}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                     <Ionicons
@@ -203,7 +203,7 @@ export function WeightTracker() {
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
-                        placeholder="Enter weight (kg)"
+                        placeholder="Peso (kg)"
                         placeholderTextColor={colors.textDimmed}
                         keyboardType="decimal-pad"
                         value={newWeight}
@@ -214,7 +214,7 @@ export function WeightTracker() {
                         style={styles.saveButton}
                         onPress={handleAddWeight}
                     >
-                        <Text style={styles.saveButtonText}>Save</Text>
+                        <Text style={styles.saveButtonText}>Guardar</Text>
                     </Pressable>
                 </View>
             )}
@@ -232,9 +232,9 @@ export function WeightTracker() {
                         <View key={index} style={styles.historyItem}>
                             <Text style={styles.historyWeight}>{entry.weight} kg</Text>
                             <Text style={styles.historyDate}>
-                                {new Date(entry.date).toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    day: 'numeric' 
+                                {new Date(entry.date).toLocaleDateString('es-MX', {
+                                    month: 'short',
+                                    day: 'numeric'
                                 })}
                             </Text>
                         </View>

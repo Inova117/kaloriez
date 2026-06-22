@@ -20,16 +20,16 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
                 style={[styles.tab, activeTab === 'today' && styles.activeTab]}
                 onPress={() => onTabChange('today')}
                 accessibilityRole="tab"
-                accessibilityLabel="Today"
+                accessibilityLabel="Hoy"
                 accessibilityState={{ selected: activeTab === 'today' }}
             >
                 <Ionicons
                     name="calendar-outline"
-                    size={20} 
+                    size={20}
                     color={activeTab === 'today' ? colors.textPrimary : colors.textSecondary}
                 />
                 <Text style={[styles.label, activeTab === 'today' && styles.activeLabel]}>
-                    Today
+                    Hoy
                 </Text>
                 {activeTab === 'today' && <View style={styles.indicator} />}
             </Pressable>
@@ -38,16 +38,16 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
                 style={[styles.tab, activeTab === 'favorites' && styles.activeTab]}
                 onPress={() => onTabChange('favorites')}
                 accessibilityRole="tab"
-                accessibilityLabel="Favorites"
+                accessibilityLabel="Favoritos"
                 accessibilityState={{ selected: activeTab === 'favorites' }}
             >
                 <Ionicons
                     name="heart-outline"
-                    size={20} 
+                    size={20}
                     color={activeTab === 'favorites' ? colors.textPrimary : colors.textSecondary}
                 />
                 <Text style={[styles.label, activeTab === 'favorites' && styles.activeLabel]}>
-                    Favorites
+                    Favoritos
                 </Text>
                 {activeTab === 'favorites' && <View style={styles.indicator} />}
             </Pressable>
@@ -56,16 +56,16 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
                 style={[styles.tab, activeTab === 'stats' && styles.activeTab]}
                 onPress={() => onTabChange('stats')}
                 accessibilityRole="tab"
-                accessibilityLabel="Stats"
+                accessibilityLabel="Progreso"
                 accessibilityState={{ selected: activeTab === 'stats' }}
             >
                 <Ionicons
                     name="bar-chart-outline"
-                    size={20} 
+                    size={20}
                     color={activeTab === 'stats' ? colors.textPrimary : colors.textSecondary}
                 />
                 <Text style={[styles.label, activeTab === 'stats' && styles.activeLabel]}>
-                    Stats
+                    Progreso
                 </Text>
                 {activeTab === 'stats' && <View style={styles.indicator} />}
             </Pressable>
@@ -74,16 +74,16 @@ export function TabNavigator({ activeTab, onTabChange }: TabNavigatorProps) {
                 style={[styles.tab, activeTab === 'profile' && styles.activeTab]}
                 onPress={() => onTabChange('profile')}
                 accessibilityRole="tab"
-                accessibilityLabel="Profile"
+                accessibilityLabel="Perfil"
                 accessibilityState={{ selected: activeTab === 'profile' }}
             >
                 <Ionicons
                     name="person-outline"
-                    size={20} 
+                    size={20}
                     color={activeTab === 'profile' ? colors.textPrimary : colors.textSecondary}
                 />
                 <Text style={[styles.label, activeTab === 'profile' && styles.activeLabel]}>
-                    Profile
+                    Perfil
                 </Text>
                 {activeTab === 'profile' && <View style={styles.indicator} />}
             </Pressable>

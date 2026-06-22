@@ -70,13 +70,13 @@ export function GoalSettingsModal({ visible, currentGoal, onSave, onClose }: Goa
 
                 <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
                     <View style={styles.content}>
-                        <Text style={styles.title}>Daily Calorie Goal</Text>
+                        <Text style={styles.title}>Meta diaria de calorías</Text>
 
                         <TextInput
                             style={styles.input}
                             value={goalText}
                             onChangeText={setGoalText}
-                            placeholder="Enter calories"
+                            placeholder="Calorías"
                             placeholderTextColor={colors.textDimmed}
                             keyboardType="numeric"
                             autoFocus
@@ -86,11 +86,11 @@ export function GoalSettingsModal({ visible, currentGoal, onSave, onClose }: Goa
 
                         <View style={styles.buttons}>
                             <Pressable style={styles.button} onPress={onClose}>
-                                <Text style={styles.cancelText}>Cancel</Text>
+                                <Text style={styles.cancelText}>Cancelar</Text>
                             </Pressable>
                             <View style={styles.divider} />
                             <Pressable style={styles.button} onPress={handleSave}>
-                                <Text style={styles.saveText}>Save</Text>
+                                <Text style={styles.saveText}>Guardar</Text>
                             </Pressable>
                         </View>
                     </View>

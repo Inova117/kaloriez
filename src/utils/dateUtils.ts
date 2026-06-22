@@ -24,13 +24,13 @@ export function isToday(date: Date): boolean {
  * Formats date for display
  */
 export function formatDisplayDate(date: Date): string {
-    if (isToday(date)) return 'Today';
+    if (isToday(date)) return 'Hoy';
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    if (formatDateKey(date) === formatDateKey(yesterday)) return 'Yesterday';
+    if (formatDateKey(date) === formatDateKey(yesterday)) return 'Ayer';
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('es-MX', {
         month: 'short',
         day: 'numeric',
         year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined

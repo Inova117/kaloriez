@@ -78,12 +78,12 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Statistics</Text>
+                <Text style={styles.headerTitle}>Progreso</Text>
                 <Pressable
                     onPress={onClose}
                     style={styles.closeButton}
                     accessibilityRole="button"
-                    accessibilityLabel="Close"
+                    accessibilityLabel="Cerrar"
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                     <Ionicons name="close-circle" size={28} color={colors.textMuted} />
@@ -97,13 +97,13 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
 
                 <View style={styles.summaryCard}>
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Daily Average</Text>
+                        <Text style={styles.summaryLabel}>Promedio diario</Text>
                         <Text style={styles.summaryValue}>{averageCalories}</Text>
                         <Text style={styles.summaryUnit}>kcal</Text>
                     </View>
                     <View style={styles.divider} />
                     <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Daily Goal</Text>
+                        <Text style={styles.summaryLabel}>Meta diaria</Text>
                         <Text style={styles.summaryValue}>{dailyGoal}</Text>
                         <Text style={styles.summaryUnit}>kcal</Text>
                     </View>
@@ -114,10 +114,10 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
                     <Ionicons name="bulb-outline" size={24} color={colors.accent} style={{ marginBottom: 8 }} />
                     <Text style={styles.insightText}>
                         {averageCalories === 0
-                            ? 'Log a few days to see your weekly insights.'
+                            ? 'Registra unos días para ver tus estadísticas.'
                             : averageCalories > dailyGoal
-                                ? `You're averaging ${averageCalories - dailyGoal} kcal over your goal on the days you logged.`
-                                : `You're averaging within your goal on the days you logged — nice consistency.`}
+                                ? `Promedias ${averageCalories - dailyGoal} kcal por encima de tu meta en los días que registraste.`
+                                : `Promedias dentro de tu meta en los días que registraste — buena constancia.`}
                     </Text>
                 </View>
 

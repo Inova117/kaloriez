@@ -36,17 +36,17 @@ export const MEAL_CONFIGS: Record<MealType, MealConfig> = {
     breakfast: {
         icon: '🌅',
         color: colors.mealBreakfast,
-        label: 'Breakfast',
+        label: 'Desayuno',
     },
     lunch: {
         icon: '☀️',
         color: colors.mealLunch,
-        label: 'Lunch',
+        label: 'Comida',
     },
     dinner: {
         icon: '🌙',
         color: colors.mealDinner,
-        label: 'Dinner',
+        label: 'Cena',
     },
     snacks: {
         icon: '🍿',

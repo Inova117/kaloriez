@@ -189,7 +189,7 @@ export function TodayScreen() {
         if (Platform.OS === 'ios') {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        Alert.alert('Goal Reached', `You've reached your daily goal of ${dailyGoal} kcal!`);
+        Alert.alert('¡Meta alcanzada!', `Llegaste a tu meta diaria de ${dailyGoal} kcal.`);
     };
 
     const handleAddEntry = useCallback(async (text: string) => {
@@ -232,8 +232,8 @@ export function TodayScreen() {
             if (suggestions.length === 0) {
                 setProcessingState('idle');
                 Alert.alert(
-                    "Couldn't catch that",
-                    'Try saying what you ate, e.g. "two eggs and a banana".'
+                    'No te entendí bien',
+                    'Intenta decir lo que comiste, por ejemplo "dos huevos y un plátano".'
                 );
                 return;
             }
@@ -309,10 +309,10 @@ export function TodayScreen() {
     const handleDelete = useCallback(async () => {
         setMenuVisible(false);
         if (!selectedEntry) return;
-        Alert.alert('Delete Entry', `Remove "${selectedEntry.name}"?`, [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert('Eliminar', `¿Quitar "${selectedEntry.name}"?`, [
+            { text: 'Cancelar', style: 'cancel' },
             {
-                text: 'Delete',
+                text: 'Eliminar',
                 style: 'destructive',
                 onPress: () => {
                     setEntries(prev => prev.filter(e => e.id !== selectedEntry.id));

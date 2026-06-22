@@ -56,13 +56,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
     const handleChangePassword = async () => {
         if (newPassword !== confirmPassword) {
-            Alert.alert('Error', 'New passwords do not match');
+            Alert.alert('Error', 'Las contraseñas no coinciden');
             return;
         }
 
         // Keep in sync with the sign-up rule (8 chars).
         if (newPassword.length < 8) {
-            Alert.alert('Error', 'Password must be at least 8 characters');
+            Alert.alert('Error', 'La contraseña debe tener al menos 8 caracteres');
             return;
         }
 
@@ -73,14 +73,14 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 Alert.alert('Error', error.message);
                 return;
             }
-            Alert.alert('Success', 'Password changed successfully');
+            Alert.alert('Listo', 'Tu contraseña se cambió correctamente');
             setIsChangingPassword(false);
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (error) {
             logger.error('Password change failed', error);
-            Alert.alert('Error', 'Could not change password. Please try again.');
+            Alert.alert('Error', 'No se pudo cambiar la contraseña. Inténtalo de nuevo.');
         } finally {
             setIsSavingPassword(false);
         }
@@ -91,18 +91,18 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
             await Linking.openURL(PRIVACY_POLICY_URL);
         } catch (error) {
             logger.error('Failed to open privacy policy', error);
-            Alert.alert('Error', 'Could not open the privacy policy.');
+            Alert.alert('Error', 'No se pudo abrir el aviso de privacidad.');
         }
     };
 
     const handleLogout = () => {
         Alert.alert(
-            'Sign Out',
-            'Are you sure you want to sign out?',
+            'Cerrar sesión',
+            '¿Seguro que quieres cerrar sesión?',
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: 'Cancelar', style: 'cancel' },
                 {
-                    text: 'Sign Out',
+                    text: 'Cerrar sesión',
                     style: 'destructive',
                     onPress: () => signOut()
                 }
@@ -114,19 +114,19 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
     const handleDeleteAccount = () => {
         Alert.alert(
-            'Delete Account',
-            'This permanently deletes your account and all your data (food logs, weight history, goals). This cannot be undone.',
+            'Eliminar cuenta',
+            'Esto elimina permanentemente tu cuenta y todos tus datos (registros de comida, historial de peso, metas). No se puede deshacer.',
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: 'Cancelar', style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: 'Eliminar',
                     style: 'destructive',
                     onPress: async () => {
                         setIsDeleting(true);
                         const { error } = await deleteAccount();
                         setIsDeleting(false);
                         if (error) {
-                            Alert.alert('Error', 'Could not delete your account. Please try again.');
+                            Alert.alert('Error', 'No se pudo eliminar tu cuenta. Inténtalo de nuevo.');
                         }
                         // On success the auth state change unmounts this screen.
                     },
@@ -142,24 +142,24 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                     onPress={onClose}
                     style={styles.closeButton}
                     accessibilityRole="button"
-                    accessibilityLabel="Close"
+                    accessibilityLabel="Cerrar"
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                     <Ionicons name="close" size={24} color={colors.textPrimary} />
                 </Pressable>
-                <Text style={styles.headerTitle}>Profile</Text>
+                <Text style={styles.headerTitle}>Perfil</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Account Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ACCOUNT</Text>
-                    
+                    <Text style={styles.sectionTitle}>CUENTA</Text>
+
                     <View style={styles.card}>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Email</Text>
-                            <Text style={styles.value}>{user?.email || 'Not available'}</Text>
+                            <Text style={styles.label}>Correo</Text>
+                            <Text style={styles.value}>{user?.email || 'No disponible'}</Text>
                         </View>
                     </View>
 
@@ -168,7 +168,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                         onPress={() => setIsChangingPassword(!isChangingPassword)}
                     >
                         <View style={styles.row}>
-                            <Text style={styles.label}>Password</Text>
+                            <Text style={styles.label}>Contraseña</Text>
                             <Ionicons 
                                 name={isChangingPassword ? "chevron-up" : "chevron-forward"} 
                                 size={20} 
@@ -181,7 +181,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                         <View style={styles.passwordForm}>
                             <TextInput
                                 style={styles.input}
-                                placeholder="Current Password"
+                                placeholder="Contraseña actual"
                                 placeholderTextColor={colors.textDimmed}
                                 secureTextEntry
                                 value={currentPassword}
@@ -189,7 +189,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                             />
                             <TextInput
                                 style={styles.input}
-                                placeholder="New Password"
+                                placeholder="Nueva contraseña"
                                 placeholderTextColor={colors.textDimmed}
                                 secureTextEntry
                                 value={newPassword}
@@ -197,7 +197,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                             />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Confirm New Password"
+                                placeholder="Confirmar nueva contraseña"
                                 placeholderTextColor={colors.textDimmed}
                                 secureTextEntry
                                 value={confirmPassword}
@@ -209,7 +209,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                                 disabled={isSavingPassword}
                             >
                                 <Text style={styles.saveButtonText}>
-                                    {isSavingPassword ? 'Changing…' : 'Change Password'}
+                                    {isSavingPassword ? 'Cambiando…' : 'Cambiar contraseña'}
                                 </Text>
                             </Pressable>
                         </View>
@@ -218,16 +218,16 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
                 {/* Goals Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>GOALS</Text>
-                    
-                    <Pressable 
+                    <Text style={styles.sectionTitle}>METAS</Text>
+
+                    <Pressable
                         style={styles.card}
                         onPress={() => setIsEditingGoal(!isEditingGoal)}
                     >
                         <View style={styles.row}>
-                            <Text style={styles.label}>Weekly Weight Goal</Text>
+                            <Text style={styles.label}>Meta de peso semanal</Text>
                             <View style={styles.goalValue}>
-                                <Text style={styles.value}>{weeklyGoal} kg/week</Text>
+                                <Text style={styles.value}>{weeklyGoal} kg/semana</Text>
                                 <Ionicons 
                                     name={isEditingGoal ? "chevron-up" : "chevron-forward"} 
                                     size={20} 
@@ -239,7 +239,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
                     {isEditingGoal && (
                         <View style={styles.goalForm}>
-                            <Text style={styles.formLabel}>Select your weekly weight loss goal</Text>
+                            <Text style={styles.formLabel}>Elige tu meta de pérdida de peso semanal</Text>
                             {['0.25', '0.5', '0.75', '1.0'].map((goal) => (
                                 <Pressable
                                     key={goal}
@@ -253,7 +253,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                                         styles.goalOptionText,
                                         tempGoal === goal && styles.goalOptionTextSelected
                                     ]}>
-                                        {goal} kg / week
+                                        {goal} kg / semana
                                     </Text>
                                     {tempGoal === goal && (
                                         <Ionicons name="checkmark" size={20} color={colors.accent} />
@@ -264,7 +264,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                                 style={styles.saveButton}
                                 onPress={saveWeeklyGoal}
                             >
-                                <Text style={styles.saveButtonText}>Save Goal</Text>
+                                <Text style={styles.saveButtonText}>Guardar meta</Text>
                             </Pressable>
                         </View>
                     )}
@@ -272,15 +272,15 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
                 {/* About */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ABOUT</Text>
+                    <Text style={styles.sectionTitle}>ACERCA DE</Text>
                     <Pressable
                         style={styles.card}
                         onPress={handleOpenPrivacy}
                         accessibilityRole="link"
-                        accessibilityLabel="Privacy Policy"
+                        accessibilityLabel="Aviso de privacidad"
                     >
                         <View style={styles.row}>
-                            <Text style={styles.label}>Privacy Policy</Text>
+                            <Text style={styles.label}>Aviso de privacidad</Text>
                             <Ionicons name="open-outline" size={18} color={colors.textMuted} />
                         </View>
                     </Pressable>
@@ -288,7 +288,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
                 {/* Sign Out */}
                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
-                    <Text style={styles.logoutText}>Sign Out</Text>
+                    <Text style={styles.logoutText}>Cerrar sesión</Text>
                 </Pressable>
 
                 {/* Delete Account (required by App Store / Play Store) */}
@@ -298,7 +298,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                     disabled={isDeleting}
                 >
                     <Text style={styles.deleteText}>
-                        {isDeleting ? 'Deleting…' : 'Delete Account'}
+                        {isDeleting ? 'Eliminando…' : 'Eliminar cuenta'}
                     </Text>
                 </Pressable>
 

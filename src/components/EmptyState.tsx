@@ -13,8 +13,8 @@ export function EmptyState({ date }: EmptyStateProps) {
     useEffect(() => {
         if (!isToday(date)) {
             setGreeting({
-                title: 'Empty Day',
-                subtitle: 'No entries recorded'
+                title: 'Día vacío',
+                subtitle: 'Sin registros'
             });
             return;
         }
@@ -22,13 +22,13 @@ export function EmptyState({ date }: EmptyStateProps) {
         const hour = new Date().getHours();
 
         if (hour >= 5 && hour < 11) {
-            setGreeting({ title: 'Good Morning', subtitle: "What's for breakfast?" });
+            setGreeting({ title: 'Buenos días', subtitle: '¿Qué desayunaste?' });
         } else if (hour >= 11 && hour < 15) {
-            setGreeting({ title: 'Lunch Time', subtitle: "What are you having?" });
+            setGreeting({ title: 'Hora de comer', subtitle: '¿Qué vas a comer?' });
         } else if (hour >= 15 && hour < 22) {
-            setGreeting({ title: 'Dinner Time', subtitle: "Log your meal" });
+            setGreeting({ title: 'Hora de cenar', subtitle: 'Registra tu comida' });
         } else {
-            setGreeting({ title: 'Late Night?', subtitle: "Any snacks to log?" });
+            setGreeting({ title: '¿Antojo nocturno?', subtitle: '¿Algún snack para registrar?' });
         }
     }, [date]);
 

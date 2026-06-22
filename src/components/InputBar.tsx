@@ -89,8 +89,8 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
             const permission = await Audio.requestPermissionsAsync();
             if (permission.status !== 'granted') {
                 Alert.alert(
-                    'Microphone Permission Required',
-                    'Please enable microphone access in your device settings to use voice input.',
+                    'Permiso de micrófono',
+                    'Activa el acceso al micrófono en los ajustes de tu dispositivo para usar la voz.',
                     [{ text: 'OK' }]
                 );
                 return;
@@ -183,7 +183,7 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                     <TextInput
                         ref={inputRef}
                         style={styles.input}
-                        placeholder="Add food..."
+                        placeholder="Agregar comida..."
                         placeholderTextColor={colors.textDimmed}
                         value={text}
                         onChangeText={handleTextChange}
@@ -211,7 +211,7 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                                 onPressOut={stopRecording}
                                 disabled={isProcessing}
                                 accessibilityRole="button"
-                                accessibilityLabel="Record voice entry"
+                                accessibilityLabel="Grabar por voz"
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Ionicons
@@ -226,7 +226,7 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                                 onPressIn={startRecording}
                                 onPressOut={stopRecording}
                                 accessibilityRole="button"
-                                accessibilityLabel="Stop recording"
+                                accessibilityLabel="Detener grabación"
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Animated.View style={{ transform: [{ scale: micScale }] }}>
@@ -243,7 +243,7 @@ export function InputBar({ onSubmit, onAudioRecorded, processingState, focusTrig
                                 onPress={handleButtonPress}
                                 disabled={isProcessing}
                                 accessibilityRole="button"
-                                accessibilityLabel="Add food"
+                                accessibilityLabel="Agregar comida"
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                                 <Ionicons
