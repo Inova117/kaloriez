@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Alert, Modal } from 'react-native';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Alert, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Header } from '../components/Header';
@@ -51,6 +52,31 @@ export function TodayScreen() {
     const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set());
     const [expandedSections, setExpandedSections] = useState<Set<MealType>>(new Set(['breakfast', 'lunch', 'dinner', 'snacks']));
     const [focusTrigger, setFocusTrigger] = useState(0);
+    // Non-blocking "I detected this — fix it?" review of the last AI entry.
+    const [reviewEntry, setReviewEntry] = useState<FoodEntry | null>(null);
+    const reviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const showReview = useCallback((entry: FoodEntry) => {
+        if (reviewTimer.current) clearTimeout(reviewTimer.current);
+        setReviewEntry(entry);
+        reviewTimer.current = setTimeout(() => setReviewEntry(null), 6000);
+    }, []);
+
+    const dismissReview = useCallback(() => {
+        if (reviewTimer.current) clearTimeout(reviewTimer.current);
+        setReviewEntry(null);
+    }, []);
+
+    useEffect(() => () => {
+        if (reviewTimer.current) clearTimeout(reviewTimer.current);
+    }, []);
+
+    const handleReviewEdit = useCallback(() => {
+        if (!reviewEntry) return;
+        setSelectedEntry(reviewEntry);
+        dismissReview();
+        setEditModalVisible(true);
+    }, [reviewEntry, dismissReview]);
 
     const totalCalories = entries.reduce((sum, entry) => sum + (Number(entry.calories) || 0), 0);
 
@@ -217,13 +243,14 @@ export function TodayScreen() {
             };
             setEntries(prev => [newEntry, ...prev]);
             if (user) addEntryRemote(user.id, newEntry);
+            showReview(newEntry);
             setProcessingState('done');
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setTimeout(() => setProcessingState('idle'), 300);
         } catch (error) {
             setProcessingState('idle');
         }
-    }, [currentDate]);
+    }, [currentDate, user?.id, showReview]);
 
     const handleAudioEntry = useCallback(async (uri: string) => {
         setProcessingState('processing');
@@ -334,8 +361,8 @@ export function TodayScreen() {
         if (selectedEntry) handleCardPress(selectedEntry); // Reuse logic
     }, [selectedEntry, handleCardPress]);
 
-    const handleDateChange = (newDate: Date) => setCurrentDate(newDate);
-    const handleDateSelect = (date: Date) => setCurrentDate(date);
+    const handleDateChange = (newDate: Date) => { dismissReview(); setCurrentDate(newDate); };
+    const handleDateSelect = (date: Date) => { dismissReview(); setCurrentDate(date); };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -412,6 +439,33 @@ export function TodayScreen() {
                         </View>
                     </View>
 
+                    {reviewEntry && (
+                        <View style={styles.reviewBanner}>
+                            <View style={styles.reviewInfo}>
+                                <Text style={styles.reviewLabel}>Detecté</Text>
+                                <Text style={styles.reviewText} numberOfLines={1}>
+                                    {reviewEntry.name} · {reviewEntry.calories} kcal
+                                </Text>
+                            </View>
+                            <Pressable
+                                style={styles.reviewEditBtn}
+                                onPress={handleReviewEdit}
+                                accessibilityRole="button"
+                                accessibilityLabel="Corregir comida detectada"
+                            >
+                                <Text style={styles.reviewEditText}>Corregir</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={dismissReview}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                accessibilityRole="button"
+                                accessibilityLabel="Está bien"
+                            >
+                                <Ionicons name="checkmark" size={22} color={colors.accent} />
+                            </Pressable>
+                        </View>
+                    )}
+
                     <InputBar
                         onSubmit={handleAddEntry}
                         onAudioRecorded={handleAudioEntry}
@@ -487,5 +541,52 @@ const styles = StyleSheet.create({
     },
     emptyList: {
         flex: 1,
+    },
+    reviewBanner: {
+        position: 'absolute',
+        bottom: 84,
+        left: 16,
+        right: 16,
+        zIndex: 1001,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        shadowColor: colors.textPrimary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    reviewInfo: {
+        flex: 1,
+    },
+    reviewLabel: {
+        fontSize: 11,
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    reviewText: {
+        fontSize: 15,
+        fontWeight: '400',
+        color: colors.textPrimary,
+    },
+    reviewEditBtn: {
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        borderRadius: 10,
+        backgroundColor: colors.accentSubtle,
+    },
+    reviewEditText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.accent,
     },
 });
