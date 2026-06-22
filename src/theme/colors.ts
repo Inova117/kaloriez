@@ -14,11 +14,12 @@ export const palette = {
     sageDark: '#5F6B58',     // Darker sage for hover states
     sageLight: '#E8EBE6',    // Very light sage for subtle backgrounds
     
-    // Warm Grays (for text)
+    // Warm Grays (for text) — darkened so muted/dimmed text meets WCAG contrast
+    // on the cream background (previous #9EABA2 / #C8C8C5 were ~2.2:1 / ~1.6:1).
     charcoal: '#2C3E35',     // Deep sage green/grey for primary text
-    stone: '#6B7A70',        // Lighter sage for secondary text
-    pebble: '#9EABA2',       // Even lighter for hints/placeholders
-    mist: '#C8C8C5',         // Very light warm gray
+    stone: '#566054',        // Secondary text (~5:1 on cream)
+    pebble: '#5E6A5D',       // Muted hints/labels (~5:1 on cream)
+    mist: '#79827A',         // Dimmed placeholders/units (~3.5:1 on cream)
     
     // Soft Pastels (for feedback)
     softGreen: '#A8C5A0',    // Success - soft pastel green

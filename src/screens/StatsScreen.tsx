@@ -109,13 +109,15 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
                     </View>
                 </View>
 
-                {/* Insight Card - Quick mocked insight */}
+                {/* Insight Card - derived from the user's actual data */}
                 <View style={[styles.summaryCard, styles.insightCard]}>
                     <Ionicons name="bulb-outline" size={24} color={colors.accent} style={{ marginBottom: 8 }} />
                     <Text style={styles.insightText}>
-                        {averageCalories > dailyGoal
-                            ? "You're slightly above your weekly target. Try adjusting your dinner portions."
-                            : "Great job! You're consistently hitting your calorie goals this week."}
+                        {averageCalories === 0
+                            ? 'Log a few days to see your weekly insights.'
+                            : averageCalories > dailyGoal
+                                ? `You're averaging ${averageCalories - dailyGoal} kcal over your goal on the days you logged.`
+                                : `You're averaging within your goal on the days you logged — nice consistency.`}
                     </Text>
                 </View>
 
