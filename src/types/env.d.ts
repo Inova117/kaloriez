@@ -1,11 +1,8 @@
 declare module '@env' {
-    export const GEMINI_API_KEY: string;
-    export const GEMINI_MODEL: string;
+    // Only the Supabase anon credentials are needed in the client. The anon key
+    // is safe to ship (it is gated by Row Level Security). The Gemini and USDA
+    // keys are NO LONGER bundled — they live server-side in the `food-ai` Edge
+    // Function. Do not re-import secret keys here.
     export const SUPABASE_URL: string;
     export const SUPABASE_ANON_KEY: string;
-    export const SUPABASE_STORAGE_BUCKET: string;
-    export const USDA_API_KEY: string;
-    export const NUTRITIONIX_APP_ID: string;
-    export const NUTRITIONIX_APP_KEY: string;
-    export const NODE_ENV: string;
 }

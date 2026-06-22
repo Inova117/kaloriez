@@ -11,6 +11,34 @@ interface AuthContextType {
     signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
     signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
     signOut: () => Promise<void>;
+    deleteAccount: () => Promise<{ error: Error | null }>;
+}
+
+// All app-owned local keys, cleared on sign out / account deletion so health
+// data never persists into the next account on a shared device.
+async function clearLocalAppData(): Promise<void> {
+    try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const appKeys = allKeys.filter(k =>
+            k.startsWith('@entries_') ||
+            k.startsWith('@migrated_') ||
+            [
+                '@weight_history',
+                '@daily_goal',
+                '@weekly_weight_goal',
+                '@favorite_items',
+                '@user_profile',
+                '@has_completed_onboarding',
+                '@user_session',
+                '@auth_token',
+            ].includes(k)
+        );
+        if (appKeys.length > 0) {
+            await AsyncStorage.multiRemove(appKeys);
+        }
+    } catch (error) {
+        logger.error('Error clearing local app data', error);
+    }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,24 +111,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signOut = async () => {
+        // Supabase's own session keys are removed by signOut(); clearLocalAppData
+        // then wipes our app data so it never leaks to the next account.
         await supabase.auth.signOut();
-        
-        // Only clear session-related data, preserve app settings and offline data
-        const keysToRemove = [
-            '@user_session',
-            '@auth_token',
-            '@has_completed_onboarding',
-        ];
-        
+        await clearLocalAppData();
+    };
+
+    const deleteAccount = async () => {
         try {
-            await AsyncStorage.multiRemove(keysToRemove);
-        } catch (error) {
-            logger.error('Error clearing session data', error);
+            const { error } = await supabase.functions.invoke('delete-account');
+            if (error) throw error;
+            await clearLocalAppData();
+            await supabase.auth.signOut();
+            return { error: null };
+        } catch (error: any) {
+            logger.error('Account deletion failed', error);
+            return { error };
         }
     };
 
     return (
-        <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut }}>
+        <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut, deleteAccount }}>
             {children}
         </AuthContext.Provider>
     );

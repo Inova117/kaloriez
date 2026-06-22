@@ -70,7 +70,7 @@ function extractQuantity(text: string): { quantity: number; unit: string } {
     return { quantity: 1, unit: 'serving' };
 }
 
-import { getFoodSuggestions } from '../lib/groq';
+import { getFoodSuggestions } from '../lib/foodAI';
 import { logger } from './logger';
 
 export async function detectCalories(input: string): Promise<number> {

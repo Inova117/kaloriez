@@ -15,7 +15,7 @@ interface ProfileScreenProps {
 const GOAL_STORAGE_KEY = '@weekly_weight_goal';
 
 export function ProfileScreen({ onClose }: ProfileScreenProps) {
-    const { user, signOut } = useAuth();
+    const { user, signOut, deleteAccount } = useAuth();
     const [weeklyGoal, setWeeklyGoal] = useState('0.5');
     const [isEditingGoal, setIsEditingGoal] = useState(false);
     const [tempGoal, setTempGoal] = useState('0.5');
@@ -95,6 +95,31 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                     style: 'destructive',
                     onPress: () => signOut()
                 }
+            ]
+        );
+    };
+
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This permanently deletes your account and all your data (food logs, weight history, goals). This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsDeleting(true);
+                        const { error } = await deleteAccount();
+                        setIsDeleting(false);
+                        if (error) {
+                            Alert.alert('Error', 'Could not delete your account. Please try again.');
+                        }
+                        // On success the auth state change unmounts this screen.
+                    },
+                },
             ]
         );
     };
@@ -231,6 +256,17 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 {/* Sign Out */}
                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
                     <Text style={styles.logoutText}>Sign Out</Text>
+                </Pressable>
+
+                {/* Delete Account (required by App Store / Play Store) */}
+                <Pressable
+                    style={styles.deleteButton}
+                    onPress={handleDeleteAccount}
+                    disabled={isDeleting}
+                >
+                    <Text style={styles.deleteText}>
+                        {isDeleting ? 'Deleting…' : 'Delete Account'}
+                    </Text>
                 </Pressable>
 
                 <View style={{ height: 40 }} />
@@ -385,5 +421,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '400',
         color: colors.error,
+    },
+    deleteButton: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        padding: 16,
+        alignItems: 'center',
+    },
+    deleteText: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: colors.error,
+        textDecorationLine: 'underline',
     },
 });
