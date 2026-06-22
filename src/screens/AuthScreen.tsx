@@ -30,25 +30,25 @@ export function AuthScreen() {
     const handleSubmit = async () => {
         // Validate email and password
         if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
+            Alert.alert('Error', 'Por favor llena todos los campos');
             return;
         }
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
-            Alert.alert('Invalid Email', 'Please enter a valid email address');
+            Alert.alert('Correo inválido', 'Ingresa un correo electrónico válido');
             return;
         }
 
         // Validate password strength
         if (password.length < 8) {
-            Alert.alert('Weak Password', 'Password must be at least 8 characters long');
+            Alert.alert('Contraseña débil', 'La contraseña debe tener al menos 8 caracteres');
             return;
         }
 
         if (!isLogin && !fullName) {
-            Alert.alert('Error', 'Please enter your name');
+            Alert.alert('Error', 'Por favor ingresa tu nombre');
             return;
         }
 
@@ -61,16 +61,16 @@ export function AuthScreen() {
             if (isLogin) {
                 const { error } = await signIn(email, password);
                 if (error) {
-                    Alert.alert('Login Failed', error.message);
+                    Alert.alert('No se pudo iniciar sesión', error.message);
                 }
             } else {
                 const { error } = await signUp(email.trim(), password, sanitizedName);
                 if (error) {
-                    Alert.alert('Sign Up Failed', error.message);
+                    Alert.alert('No se pudo crear la cuenta', error.message);
                 } else {
                     Alert.alert(
-                        'Success!',
-                        'Please check your email to verify your account.',
+                        '¡Listo!',
+                        'Revisa tu correo para verificar tu cuenta.',
                         [{ text: 'OK', onPress: () => setIsLogin(true) }]
                     );
                 }
@@ -89,19 +89,19 @@ export function AuthScreen() {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={styles.header}>
                         <Text style={styles.logo}>🍎</Text>
-                        <Text style={styles.title}>Calorie Counter</Text>
+                        <Text style={styles.title}>Kaloriez</Text>
                         <Text style={styles.subtitle}>
-                            {isLogin ? 'Welcome back!' : 'Create your account'}
+                            {isLogin ? '¡Qué bueno verte de nuevo!' : 'Crea tu cuenta'}
                         </Text>
                     </View>
 
                     <View style={styles.form}>
                         {!isLogin && (
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Full Name</Text>
+                                <Text style={styles.label}>Nombre completo</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="John Doe"
+                                    placeholder="Juan Pérez"
                                     placeholderTextColor={colors.textDimmed}
                                     value={fullName}
                                     onChangeText={setFullName}
@@ -112,7 +112,7 @@ export function AuthScreen() {
                         )}
 
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Email</Text>
+                            <Text style={styles.label}>Correo</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="you@example.com"
@@ -127,7 +127,7 @@ export function AuthScreen() {
                         </View>
 
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Password</Text>
+                            <Text style={styles.label}>Contraseña</Text>
                             <View style={styles.passwordContainer}>
                                 <TextInput
                                     style={styles.passwordInput}
@@ -162,7 +162,7 @@ export function AuthScreen() {
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
                                 <Text style={styles.submitText}>
-                                    {isLogin ? 'Sign In' : 'Sign Up'}
+                                    {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
                                 </Text>
                             )}
                         </Pressable>
@@ -174,10 +174,10 @@ export function AuthScreen() {
                         >
                             <Text style={styles.switchText}>
                                 {isLogin
-                                    ? "Don't have an account? "
-                                    : 'Already have an account? '}
+                                    ? '¿No tienes cuenta? '
+                                    : '¿Ya tienes cuenta? '}
                                 <Text style={styles.switchTextBold}>
-                                    {isLogin ? 'Sign Up' : 'Sign In'}
+                                    {isLogin ? 'Crear cuenta' : 'Iniciar sesión'}
                                 </Text>
                             </Text>
                         </Pressable>

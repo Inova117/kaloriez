@@ -83,7 +83,7 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
         const parsedCalories = parseInt(editCalories);
 
         if (!trimmedName || parsedCalories <= 0) {
-            Alert.alert('Invalid Input', 'Please enter a valid name and calories.');
+            Alert.alert('Datos inválidos', 'Ingresa un nombre y calorías válidos.');
             return;
         }
 
@@ -127,10 +127,10 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
     const handleDeleteOption = () => {
         setMenuVisible(false);
         if (!selectedFavorite) return;
-        Alert.alert('Delete Favorite', `Remove "${selectedFavorite.name}"?`, [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert('Eliminar favorito', `¿Quitar "${selectedFavorite.name}"?`, [
+            { text: 'Cancelar', style: 'cancel' },
             {
-                text: 'Delete',
+                text: 'Eliminar',
                 style: 'destructive',
                 onPress: () => {
                     saveFavorites(favorites.filter(f => f.id !== selectedFavorite.id));
@@ -153,7 +153,7 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
         >
             <View style={styles.info}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.calories}>{item.calories} cal</Text>
+                <Text style={styles.calories}>{item.calories} kcal</Text>
             </View>
         </Pressable>
     );
@@ -161,17 +161,17 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <Text style={styles.title}>Favorites</Text>
+                <Text style={styles.title}>Favoritos</Text>
                 <Pressable style={styles.addButton} onPress={handleAddNew}>
-                    <Text style={styles.addButtonText}>Add</Text>
+                    <Text style={styles.addButtonText}>Agregar</Text>
                 </Pressable>
             </View>
 
             {favorites.length === 0 ? (
                 <View style={styles.emptyState}>
-                    <Text style={styles.emptyText}>No favorites yet</Text>
+                    <Text style={styles.emptyText}>Aún no hay favoritos</Text>
                     <Text style={styles.emptySubtext}>
-                        Add your frequently eaten foods for quick access
+                        Agrega tus comidas frecuentes para registrarlas al instante
                     </Text>
                 </View>
             ) : (
@@ -198,14 +198,14 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                             style={styles.menuOption}
                             onPress={handleEditOption}
                         >
-                            <Text style={styles.menuText}>Edit</Text>
+                            <Text style={styles.menuText}>Editar</Text>
                         </Pressable>
                         <View style={styles.menuDivider} />
                         <Pressable
                             style={styles.menuOption}
                             onPress={handleDeleteOption}
                         >
-                            <Text style={[styles.menuText, styles.menuTextDanger]}>Delete</Text>
+                            <Text style={[styles.menuText, styles.menuTextDanger]}>Eliminar</Text>
                         </Pressable>
                     </View>
                 </Pressable>
@@ -220,14 +220,14 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>
-                            {selectedFavorite ? 'Edit Favorite' : 'Add Favorite'}
+                            {selectedFavorite ? 'Editar favorito' : 'Agregar favorito'}
                         </Text>
 
                         <TextInput
                             style={styles.input}
                             value={editName}
                             onChangeText={setEditName}
-                            placeholder="Food name"
+                            placeholder="Nombre"
                             placeholderTextColor={colors.textDimmed}
                             autoFocus={!selectedFavorite}
                         />
@@ -236,7 +236,7 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                             style={styles.input}
                             value={editCalories}
                             onChangeText={setEditCalories}
-                            placeholder="Calories"
+                            placeholder="Calorías"
                             placeholderTextColor={colors.textDimmed}
                             keyboardType="numeric"
                         />
@@ -246,13 +246,13 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                                 style={[styles.modalButton, styles.cancelButton]}
                                 onPress={() => setEditModalVisible(false)}
                             >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                                <Text style={styles.cancelButtonText}>Cancelar</Text>
                             </Pressable>
                             <Pressable
                                 style={[styles.modalButton, styles.saveButton]}
                                 onPress={handleSaveEdit}
                             >
-                                <Text style={styles.saveButtonText}>Save</Text>
+                                <Text style={styles.saveButtonText}>Guardar</Text>
                             </Pressable>
                         </View>
                     </View>

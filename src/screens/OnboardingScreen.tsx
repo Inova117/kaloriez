@@ -69,7 +69,7 @@ export function OnboardingScreen({ onComplete, isEditing = false }: OnboardingSc
         const parsedHeight = parseFloat(height);
 
         if (!parsedAge || !parsedWeight || !parsedHeight) {
-            Alert.alert('Missing Info', 'Please fill in your age, weight, and height correctly.');
+            Alert.alert('Faltan datos', 'Llena correctamente tu edad, peso y estatura.');
             return;
         }
 
@@ -98,13 +98,13 @@ export function OnboardingScreen({ onComplete, isEditing = false }: OnboardingSc
             }
             
             Alert.alert(
-                'Goal Updated! 🎯',
-                `Based on your profile, your daily goal is ${dailyGoal} calories.`,
-                [{ text: "Awesome!", onPress: onComplete }]
+                '¡Meta lista! 🎯',
+                `Según tu perfil, tu meta diaria es de ${dailyGoal} calorías.`,
+                [{ text: '¡Genial!', onPress: onComplete }]
             );
         } catch (error) {
             logger.error('Failed to save onboarding data', error);
-            Alert.alert('Error', 'Something went wrong while saving your profile.');
+            Alert.alert('Error', 'Algo salió mal al guardar tu perfil.');
         }
     };
 
@@ -125,98 +125,98 @@ export function OnboardingScreen({ onComplete, isEditing = false }: OnboardingSc
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     {!isEditing && (
                         <>
-                            <Text style={styles.title}>Welcome! 👋</Text>
-                            <Text style={styles.subtitle}>Let's set up your personalized daily calorie goal.</Text>
+                            <Text style={styles.title}>¡Bienvenido! 👋</Text>
+                            <Text style={styles.subtitle}>Configuremos tu meta diaria de calorías personalizada.</Text>
                         </>
                     )}
                     {isEditing && (
-                        <Text style={styles.title}>Edit Profile ⚙️</Text>
+                        <Text style={styles.title}>Editar perfil ⚙️</Text>
                     )}
 
                     {/* Gender */}
-                    <Text style={styles.label}>Gender</Text>
+                    <Text style={styles.label}>Sexo</Text>
                     <View style={styles.row}>
-                        <Pressable 
-                            style={[styles.segmentBtn, gender === 'male' && styles.segmentBtnActive]} 
+                        <Pressable
+                            style={[styles.segmentBtn, gender === 'male' && styles.segmentBtnActive]}
                             onPress={() => setGender('male')}
                         >
-                            <Text style={[styles.segmentText, gender === 'male' && styles.segmentTextActive]}>Male</Text>
+                            <Text style={[styles.segmentText, gender === 'male' && styles.segmentTextActive]}>Hombre</Text>
                         </Pressable>
-                        <Pressable 
-                            style={[styles.segmentBtn, gender === 'female' && styles.segmentBtnActive]} 
+                        <Pressable
+                            style={[styles.segmentBtn, gender === 'female' && styles.segmentBtnActive]}
                             onPress={() => setGender('female')}
                         >
-                            <Text style={[styles.segmentText, gender === 'female' && styles.segmentTextActive]}>Female</Text>
+                            <Text style={[styles.segmentText, gender === 'female' && styles.segmentTextActive]}>Mujer</Text>
                         </Pressable>
                     </View>
 
                     {/* Age, Weight, Height */}
-                    <Text style={styles.label}>Age (years)</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        keyboardType="number-pad" 
-                        value={age} 
-                        onChangeText={setAge} 
-                        placeholder="e.g. 25"
+                    <Text style={styles.label}>Edad (años)</Text>
+                    <TextInput
+                        style={styles.input}
+                        keyboardType="number-pad"
+                        value={age}
+                        onChangeText={setAge}
+                        placeholder="ej. 25"
                         placeholderTextColor={colors.textDimmed}
                     />
 
-                    <Text style={styles.label}>Weight (kg)</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        keyboardType="decimal-pad" 
-                        value={weight} 
-                        onChangeText={setWeight} 
-                        placeholder="e.g. 70"
+                    <Text style={styles.label}>Peso (kg)</Text>
+                    <TextInput
+                        style={styles.input}
+                        keyboardType="decimal-pad"
+                        value={weight}
+                        onChangeText={setWeight}
+                        placeholder="ej. 70"
                         placeholderTextColor={colors.textDimmed}
                     />
 
-                    <Text style={styles.label}>Height (cm)</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        keyboardType="number-pad" 
-                        value={height} 
-                        onChangeText={setHeight} 
-                        placeholder="e.g. 175"
+                    <Text style={styles.label}>Estatura (cm)</Text>
+                    <TextInput
+                        style={styles.input}
+                        keyboardType="number-pad"
+                        value={height}
+                        onChangeText={setHeight}
+                        placeholder="ej. 175"
                         placeholderTextColor={colors.textDimmed}
                     />
 
                     {/* Activity Level */}
-                    <Text style={styles.label}>Activity Level</Text>
+                    <Text style={styles.label}>Nivel de actividad</Text>
                     <View style={styles.pickerContainer}>
                         <Picker
                             selectedValue={activityLevel}
                             onValueChange={(itemValue) => setActivityLevel(itemValue as UserProfile['activityLevel'])}
                             style={styles.picker}
                         >
-                            <Picker.Item label="Sedentary (Little/no exercise)" value="sedentary" />
-                            <Picker.Item label="Lightly Active (1-3 days/week)" value="lightly_active" />
-                            <Picker.Item label="Moderately Active (3-5 days/week)" value="moderately_active" />
-                            <Picker.Item label="Very Active (6-7 days/week)" value="very_active" />
-                            <Picker.Item label="Extra Active (Physical job/2x training)" value="extra_active" />
+                            <Picker.Item label="Sedentario (poco/nada de ejercicio)" value="sedentary" />
+                            <Picker.Item label="Ligera (1-3 días/semana)" value="lightly_active" />
+                            <Picker.Item label="Moderada (3-5 días/semana)" value="moderately_active" />
+                            <Picker.Item label="Muy activa (6-7 días/semana)" value="very_active" />
+                            <Picker.Item label="Extra activa (trabajo físico/2x entreno)" value="extra_active" />
                         </Picker>
                     </View>
 
                     {/* Weight Goal */}
-                    <Text style={styles.label}>Weekly Goal</Text>
+                    <Text style={styles.label}>Meta semanal</Text>
                     <View style={styles.pickerContainer}>
                         <Picker
                             selectedValue={weightGoal}
                             onValueChange={(itemValue) => setWeightGoal(itemValue as UserProfile['weightGoal'])}
                             style={styles.picker}
                         >
-                            <Picker.Item label="Lose 1.00 kg / week" value="lose_1_00" />
-                            <Picker.Item label="Lose 0.75 kg / week" value="lose_0_75" />
-                            <Picker.Item label="Lose 0.50 kg / week" value="lose_0_50" />
-                            <Picker.Item label="Lose 0.25 kg / week" value="lose_0_25" />
-                            <Picker.Item label="Maintain weight" value="maintain" />
-                            <Picker.Item label="Gain 0.25 kg / week" value="gain_0_25" />
-                            <Picker.Item label="Gain 0.50 kg / week" value="gain_0_50" />
+                            <Picker.Item label="Bajar 1.00 kg / semana" value="lose_1_00" />
+                            <Picker.Item label="Bajar 0.75 kg / semana" value="lose_0_75" />
+                            <Picker.Item label="Bajar 0.50 kg / semana" value="lose_0_50" />
+                            <Picker.Item label="Bajar 0.25 kg / semana" value="lose_0_25" />
+                            <Picker.Item label="Mantener peso" value="maintain" />
+                            <Picker.Item label="Subir 0.25 kg / semana" value="gain_0_25" />
+                            <Picker.Item label="Subir 0.50 kg / semana" value="gain_0_50" />
                         </Picker>
                     </View>
 
                     <Pressable style={styles.submitBtn} onPress={handleCalculate}>
-                        <Text style={styles.submitText}>Calculate My Goal</Text>
+                        <Text style={styles.submitText}>Calcular mi meta</Text>
                     </Pressable>
 
                 </ScrollView>
