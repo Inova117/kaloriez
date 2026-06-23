@@ -51,6 +51,19 @@ supabase secrets set \
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are already
 available to Edge Functions automatically — you do not need to set them.
 
+### Optional: swap the AI model via OpenRouter (food-ai)
+The text pipeline (`food-ai`) can use OpenRouter instead of Gemini to A/B other
+models without code changes (audio stays on Gemini). To switch:
+```bash
+supabase secrets set AI_PROVIDER=openrouter \
+  OPENROUTER_API_KEY=sk-or-... \
+  OPENROUTER_MODEL=openai/gpt-4o-mini   # or anthropic/claude-3.5-haiku, deepseek/deepseek-chat, etc.
+supabase functions deploy food-ai
+```
+Leave `AI_PROVIDER` unset (or `gemini`) to keep Gemini. NOTE: model choice does
+NOT fix portion ambiguity (the main calorie-error source) — the in-app assumed-
+portion display + one-tap correction is the primary accuracy lever.
+
 ## 4. Rotate the exposed keys (critical)
 
 The previous build shipped the Gemini and USDA keys inside the JS bundle, so they

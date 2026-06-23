@@ -19,6 +19,37 @@ const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const USDA_API_KEY = Deno.env.get("USDA_API_KEY") ?? "";
 const USDA_BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
+// Provider is swappable without code changes. Set AI_PROVIDER=openrouter +
+// OPENROUTER_API_KEY (+ OPENROUTER_MODEL, e.g. "openai/gpt-4o-mini",
+// "anthropic/claude-3.5-haiku", "deepseek/deepseek-chat") to A/B other models.
+// Both Gemini's OpenAI-compatible endpoint and OpenRouter use the same schema.
+const AI_PROVIDER = (Deno.env.get("AI_PROVIDER") ?? "gemini").toLowerCase();
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") ?? "";
+const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") ?? "openai/gpt-4o-mini";
+
+function aiEndpoint(): { url: string; headers: Record<string, string>; model: string } {
+    if (AI_PROVIDER === "openrouter") {
+        return {
+            url: "https://openrouter.ai/api/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                "HTTP-Referer": "https://kaloriez.app",
+                "X-Title": "Kaloriez",
+            },
+            model: OPENROUTER_MODEL,
+        };
+    }
+    return {
+        url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GEMINI_API_KEY}`,
+        },
+        model: GEMINI_MODEL,
+    };
+}
+
 const MAX_ENTRY_CALORIES = 20000;
 const MAX_KCAL_PER_100G = 902; // above pure fat ⇒ almost certainly a kJ value
 
@@ -170,25 +201,20 @@ Deno.serve(async (req: Request) => {
             return jsonResponse({ suggestions: [] });
         }
 
-        const completion = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${GEMINI_API_KEY}`,
-                },
-                body: JSON.stringify({
-                    model: GEMINI_MODEL,
-                    temperature: 0.1,
-                    max_tokens: 600,
-                    messages: [
-                        { role: "system", content: SYSTEM_PROMPT },
-                        { role: "user", content: query.slice(0, 300) },
-                    ],
-                }),
-            },
-        );
+        const ai = aiEndpoint();
+        const completion = await fetch(ai.url, {
+            method: "POST",
+            headers: ai.headers,
+            body: JSON.stringify({
+                model: ai.model,
+                temperature: 0.1,
+                max_tokens: 600,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: query.slice(0, 300) },
+                ],
+            }),
+        });
 
         if (!completion.ok) {
             return jsonResponse({ suggestions: [], error: "ai_unavailable" });
