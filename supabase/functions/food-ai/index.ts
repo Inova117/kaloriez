@@ -149,6 +149,15 @@ async function enrichSuggestions(parsed: any[]): Promise<any[]> {
 
         const calories = usdaCalories ?? ai;
         if (calories == null) return null;
+
+        // Optional size choices, only when the model deemed the portion ambiguous.
+        const options = Array.isArray(s?.options)
+            ? s.options
+                .map((o: any) => ({ label: String(o?.label ?? "").trim(), calories: toSafeCalories(o?.calories) }))
+                .filter((o: any) => o.label && o.calories != null)
+                .slice(0, 4)
+            : [];
+
         return {
             name,
             calories,
@@ -156,6 +165,7 @@ async function enrichSuggestions(parsed: any[]): Promise<any[]> {
             description: s?.description
                 ? `${s.description}${usdaCalories != null ? " (USDA verified)" : " (AI estimate)"}`
                 : undefined,
+            options,
         };
     }));
     return enriched.filter((e) => e !== null);
@@ -178,8 +188,10 @@ PASO 2 - Estima calorías con cuidado:
   - Para comida mexicana usa porciones y preparaciones reales (con tortilla, aceite, etc.).
 
 PASO 3 - Formato de salida:
-  - Devuelve un arreglo JSON donde cada item tiene: name (nombre limpio EN ESPAÑOL, Title Case, sin palabras de más), calories (entero, para la porción exacta), portionGrams (el peso usado), description (en español, p.ej. "2 huevos estrellados, ~120g"), usdaQuery (nombre genérico EN INGLÉS para buscar en la base USDA, p.ej. "pork tacos", "grilled chicken breast"; usa "" si es un platillo compuesto/mexicano poco probable en USDA).
-  - Ejemplo: [{"name": "Tacos Al Pastor", "calories": 285, "portionGrams": 190, "description": "2 tacos al pastor con tortilla de maíz", "usdaQuery": "pork tacos"}]
+  - Devuelve un arreglo JSON donde cada item tiene: name (nombre limpio EN ESPAÑOL, Title Case, sin palabras de más), calories (entero, para la porción exacta — usa tu mejor estimado del tamaño más común), portionGrams (el peso usado), description (en español, p.ej. "2 huevos estrellados, ~120g"), usdaQuery (nombre genérico EN INGLÉS para buscar en la base USDA, p.ej. "pork tacos", "grilled chicken breast"; usa "" si es un platillo compuesto/mexicano poco probable en USDA).
+  - options (OPCIONAL): SOLO si el tamaño/porción es AMBIGUO (p.ej. "personal", "un vaso", "un plato", "una rebanada", "un puño"), incluye 2-4 tamaños comunes: [{"label": "355ml", "calories": 140}, {"label": "600ml", "calories": 250}] — calories de cada opción calculado para ESE tamaño. Si la porción es clara (p.ej. "200g de pollo", "2 huevos"), OMITE options o usa [].
+  - Ejemplo ambiguo: [{"name": "Coca-Cola", "calories": 140, "portionGrams": 355, "description": "Coca-Cola, lata 355ml", "usdaQuery": "cola soda", "options": [{"label": "355ml lata", "calories": 140}, {"label": "600ml", "calories": 250}, {"label": "1L", "calories": 420}]}]
+  - Ejemplo claro: [{"name": "Tacos Al Pastor", "calories": 285, "portionGrams": 190, "description": "2 tacos al pastor con tortilla de maíz", "usdaQuery": "pork tacos"}]
 
 REGLAS:
 - Si el usuario menciona cantidad (2 huevos, 200g de pollo), calcula para ESA cantidad, no para 100g.

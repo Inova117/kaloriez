@@ -19,7 +19,7 @@ import { StatsScreen } from './StatsScreen';
 import { colors } from '../theme/colors';
 import { FoodEntry, QuickAddItem, ProcessingState, MEAL_CONFIGS, MealType } from '../types';
 import { detectCalories } from '../utils/calorieAI';
-import { processAudioDictation } from '../lib/foodAI';
+import { processAudioDictation, PortionOption } from '../lib/foodAI';
 import { getMealTypeFromTime } from '../utils/mealUtils';
 import { formatDateKey, isToday } from '../utils/dateUtils';
 import { saveEntriesForDate, loadEntriesForDate, getDatesWithEntries } from '../utils/storageUtils';
@@ -55,18 +55,32 @@ export function TodayScreen() {
     // Non-blocking "I detected this — fix it?" review of the last AI entry.
     const [reviewEntry, setReviewEntry] = useState<FoodEntry | null>(null);
     const [reviewDetail, setReviewDetail] = useState<string | undefined>(undefined);
+    const [reviewOptions, setReviewOptions] = useState<PortionOption[]>([]);
     const reviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const showReview = useCallback((entry: FoodEntry, detail?: string) => {
+    const showReview = useCallback((entry: FoodEntry, detail?: string, options?: PortionOption[]) => {
         if (reviewTimer.current) clearTimeout(reviewTimer.current);
         setReviewEntry(entry);
         setReviewDetail(detail);
-        reviewTimer.current = setTimeout(() => setReviewEntry(null), 6000);
+        setReviewOptions(options ?? []);
+        // Give a bit longer when there are size choices to pick from.
+        reviewTimer.current = setTimeout(() => setReviewEntry(null), options && options.length ? 9000 : 6000);
     }, []);
 
     const dismissReview = useCallback(() => {
         if (reviewTimer.current) clearTimeout(reviewTimer.current);
         setReviewEntry(null);
+    }, []);
+
+    const handlePickOption = useCallback((opt: PortionOption) => {
+        setReviewEntry(prev => {
+            if (!prev) return prev;
+            const updated = { ...prev, calories: opt.calories };
+            setEntries(list => list.map(e => e.id === prev.id ? updated : e));
+            updateEntryRemote(updated);
+            return updated;
+        });
+        if (Platform.OS === 'ios') Haptics.selectionAsync();
     }, []);
 
     useEffect(() => () => {
@@ -231,7 +245,7 @@ export function TodayScreen() {
                 return;
             }
             
-            const { calories, source, name, detail } = await detectCalories(sanitizedText);
+            const { calories, source, name, detail, options } = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: generateId(),
@@ -245,7 +259,7 @@ export function TodayScreen() {
             };
             setEntries(prev => [newEntry, ...prev]);
             if (user) addEntryRemote(user.id, newEntry);
-            showReview(newEntry, detail);
+            showReview(newEntry, detail, options);
             setProcessingState('done');
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setTimeout(() => setProcessingState('idle'), 300);
@@ -443,31 +457,59 @@ export function TodayScreen() {
 
                     {reviewEntry && (
                         <View style={styles.reviewBanner}>
-                            <View style={styles.reviewInfo}>
-                                <Text style={styles.reviewLabel}>Detecté</Text>
-                                <Text style={styles.reviewText} numberOfLines={1}>
-                                    {reviewEntry.name} · {reviewEntry.calories} kcal
-                                </Text>
-                                {reviewDetail && (
-                                    <Text style={styles.reviewSub} numberOfLines={1}>{reviewDetail}</Text>
-                                )}
+                            <View style={styles.reviewRow}>
+                                <View style={styles.reviewInfo}>
+                                    <Text style={styles.reviewLabel}>
+                                        {reviewOptions.length > 0 ? 'Detecté · ¿qué tamaño?' : 'Detecté'}
+                                    </Text>
+                                    <Text style={styles.reviewText} numberOfLines={1}>
+                                        {reviewEntry.name} · {reviewEntry.calories} kcal
+                                    </Text>
+                                    {reviewDetail && (
+                                        <Text style={styles.reviewSub} numberOfLines={1}>{reviewDetail}</Text>
+                                    )}
+                                </View>
+                                <Pressable
+                                    onPress={dismissReview}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Está bien"
+                                >
+                                    <Ionicons name="checkmark" size={22} color={colors.accent} />
+                                </Pressable>
                             </View>
-                            <Pressable
-                                style={styles.reviewEditBtn}
-                                onPress={handleReviewEdit}
-                                accessibilityRole="button"
-                                accessibilityLabel="Corregir comida detectada"
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.reviewChips}
+                                keyboardShouldPersistTaps="handled"
                             >
-                                <Text style={styles.reviewEditText}>Corregir</Text>
-                            </Pressable>
-                            <Pressable
-                                onPress={dismissReview}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                accessibilityRole="button"
-                                accessibilityLabel="Está bien"
-                            >
-                                <Ionicons name="checkmark" size={22} color={colors.accent} />
-                            </Pressable>
+                                {reviewOptions.map((opt) => {
+                                    const active = opt.calories === reviewEntry.calories;
+                                    return (
+                                        <Pressable
+                                            key={opt.label}
+                                            style={[styles.reviewChip, active && styles.reviewChipActive]}
+                                            onPress={() => handlePickOption(opt)}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={`${opt.label}, ${opt.calories} kilocalorías`}
+                                        >
+                                            <Text style={[styles.reviewChipText, active && styles.reviewChipTextActive]}>
+                                                {opt.label} · {opt.calories}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                                <Pressable
+                                    style={[styles.reviewChip, styles.reviewChipEdit]}
+                                    onPress={handleReviewEdit}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Corregir manualmente"
+                                >
+                                    <Text style={styles.reviewEditText}>✎ Otro</Text>
+                                </Pressable>
+                            </ScrollView>
                         </View>
                     )}
 
@@ -553,9 +595,8 @@ const styles = StyleSheet.create({
         left: 16,
         right: 16,
         zIndex: 1001,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
+        flexDirection: 'column',
+        gap: 10,
         backgroundColor: colors.cardBackground,
         borderRadius: 16,
         paddingVertical: 12,
@@ -568,8 +609,41 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 6,
     },
+    reviewRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
     reviewInfo: {
         flex: 1,
+    },
+    reviewChips: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingRight: 4,
+    },
+    reviewChip: {
+        paddingVertical: 7,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        backgroundColor: colors.inputBackground,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+    },
+    reviewChipActive: {
+        backgroundColor: colors.accentSubtle,
+        borderColor: colors.accent,
+    },
+    reviewChipText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: colors.textSecondary,
+    },
+    reviewChipTextActive: {
+        color: colors.accent,
+    },
+    reviewChipEdit: {
+        backgroundColor: 'transparent',
     },
     reviewLabel: {
         fontSize: 11,

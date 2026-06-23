@@ -2,11 +2,26 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
 import { logger } from '../utils/logger';
 
+export interface PortionOption {
+    label: string;
+    calories: number;
+}
+
 export interface FoodSuggestion {
     name: string;
     calories: number;
     description?: string;
     verified?: boolean; // true when the calories came from USDA ground truth
+    options?: PortionOption[]; // size choices, only when the portion is ambiguous
+}
+
+function mapOptions(raw: unknown): PortionOption[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((o: any) => ({ label: String(o?.label ?? '').trim(), calories: Number(o?.calories) }))
+        .filter((o) => o.label.length > 0 && Number.isFinite(o.calories) && o.calories >= 0)
+        .map((o) => ({ ...o, calories: Math.round(o.calories) }))
+        .slice(0, 4);
 }
 
 /** Validate/normalize the function's suggestions array (defense in depth). */
@@ -18,6 +33,7 @@ function mapSuggestions(raw: unknown): FoodSuggestion[] {
             calories: Number(s?.calories),
             description: s?.description,
             verified: s?.verified === true,
+            options: mapOptions(s?.options),
         }))
         .filter((s) => Number.isFinite(s.calories) && s.calories >= 0)
         .map((s) => ({ ...s, calories: Math.round(s.calories) }));

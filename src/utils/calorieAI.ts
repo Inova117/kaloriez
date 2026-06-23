@@ -70,7 +70,7 @@ function extractQuantity(text: string): { quantity: number; unit: string } {
     return { quantity: 1, unit: 'serving' };
 }
 
-import { getFoodSuggestions } from '../lib/foodAI';
+import { getFoodSuggestions, PortionOption } from '../lib/foodAI';
 import { logger } from './logger';
 import { CalorieSource } from '../types';
 
@@ -79,6 +79,7 @@ export interface CalorieResult {
     source: CalorieSource;
     name?: string;   // AI-resolved, cleaned food name (Spanish) when available
     detail?: string; // assumed portion description (e.g. "Coca personal, 355ml")
+    options?: PortionOption[]; // one-tap size choices when the portion is ambiguous
 }
 
 // Strip the trailing "(USDA verified)"/"(AI estimate)" suffix — the badge already conveys it.
@@ -104,6 +105,7 @@ export async function detectCalories(input: string): Promise<CalorieResult> {
                     source: top.verified ? 'verified' : 'estimate',
                     name: top.name,
                     detail: cleanDetail(top.description),
+                    options: top.options,
                 };
             }
         }
