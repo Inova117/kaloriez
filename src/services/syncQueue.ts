@@ -7,9 +7,12 @@ import { logger } from '../utils/logger';
  *
  * Remote writes (food/weight mutations) are enqueued and then flushed. When the
  * device is online the flush drains the queue immediately; when offline the ops
- * persist in AsyncStorage and are retried on the next flush (app launch or the
- * next mutation). All ops are idempotent (upsert / delete-by-id) so replaying a
- * partially-applied queue is safe.
+ * persist in AsyncStorage and are retried on the next flush (reconnect, app
+ * launch, or the next mutation). All ops are idempotent (upsert / delete-by-id)
+ * so replaying a partially-applied queue is safe.
+ *
+ * Exposes pending count + syncing state via subscribe() so the UI can show an
+ * offline / syncing / synced indicator.
  */
 export type SyncOp =
     | { kind: 'food_upsert'; row: Record<string, unknown> }
@@ -18,7 +21,30 @@ export type SyncOp =
     | { kind: 'weight_upsert'; row: Record<string, unknown> };
 
 const QUEUE_KEY = '@sync_queue';
+
 let isFlushing = false;
+let pendingCount = 0;
+let syncing = false;
+const subscribers = new Set<() => void>();
+
+function notify() {
+    subscribers.forEach((s) => s());
+}
+
+export function subscribeQueue(cb: () => void): () => void {
+    subscribers.add(cb);
+    return () => {
+        subscribers.delete(cb);
+    };
+}
+
+export function getPending(): number {
+    return pendingCount;
+}
+
+export function isSyncing(): boolean {
+    return syncing;
+}
 
 async function readQueue(): Promise<SyncOp[]> {
     try {
@@ -35,7 +61,19 @@ async function writeQueue(queue: SyncOp[]): Promise<void> {
     } catch (error) {
         logger.error('Failed to persist sync queue', error);
     }
+    if (queue.length !== pendingCount) {
+        pendingCount = queue.length;
+        notify();
+    }
 }
+
+// Initialise the pending count from disk on first load.
+readQueue().then((q) => {
+    if (q.length !== pendingCount) {
+        pendingCount = q.length;
+        notify();
+    }
+});
 
 async function apply(op: SyncOp): Promise<void> {
     if (op.kind === 'food_upsert') {
@@ -68,8 +106,12 @@ export async function enqueue(op: SyncOp): Promise<void> {
 export async function flushQueue(): Promise<void> {
     if (isFlushing) return;
     isFlushing = true;
+    let queue = await readQueue();
+    if (queue.length > 0) {
+        syncing = true;
+        notify();
+    }
     try {
-        let queue = await readQueue();
         while (queue.length > 0) {
             const op = queue[0];
             try {
@@ -83,6 +125,10 @@ export async function flushQueue(): Promise<void> {
         }
     } finally {
         isFlushing = false;
+        if (syncing) {
+            syncing = false;
+            notify();
+        }
     }
 }
 

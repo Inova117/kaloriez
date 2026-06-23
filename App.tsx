@@ -9,6 +9,7 @@ import { AuthScreen } from './src/screens/AuthScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { migrateLocalDataToSupabase } from './src/services/dataMigration';
 import { flushQueue } from './src/services/syncQueue';
+import { subscribeConnectivity } from './src/services/connectivity';
 import { supabase } from './src/lib/supabase';
 import { colors } from './src/theme/colors';
 import { logger } from './src/utils/logger';
@@ -55,6 +56,11 @@ function AppContent() {
   useEffect(() => {
     if (user) flushQueue();
   }, [user?.id]);
+
+  // Auto-sync the moment connectivity returns.
+  useEffect(() => subscribeConnectivity((online) => {
+    if (online) flushQueue();
+  }), []);
 
   const checkOnboardingStatus = async () => {
     try {

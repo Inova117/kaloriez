@@ -6,6 +6,7 @@ import { FavoritesScreen } from './FavoritesScreen';
 import { StatsScreen } from './StatsScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { TabNavigator } from '../components/TabNavigator';
+import { SyncStatusPill } from '../components/SyncStatusPill';
 import { colors } from '../theme/colors';
 
 type TabName = 'today' | 'favorites' | 'stats' | 'profile';
@@ -37,6 +38,7 @@ export function MainApp() {
             <View style={styles.content}>
                 {renderContent()}
             </View>
+            <SyncStatusPill />
             <TabNavigator activeTab={activeTab} onTabChange={handleTabChange} />
         </SafeAreaView>
     );
