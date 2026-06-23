@@ -270,6 +270,11 @@
     padding: 12px;
     margin-bottom: 6px;
     box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    transition: border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+  }
+  .food-row:hover {
+    border-color: rgba(123,137,111,.28);
+    box-shadow: 0 4px 14px -4px rgba(44,62,53,.14);
   }
   .food-name {
     font-size: 16px; font-weight: 300; color: var(--carbon);
@@ -399,6 +404,23 @@
       transition: opacity 220ms ease, transform 220ms ease;
       transition-delay: calc(var(--i, 0) * 50ms + 360ms);
     }
+
+    /* La palomita "verificado" asentándose cuando su fila aparece */
+    .day-card.js-anim .check { opacity: 0; transform: scale(.5); }
+    .day-card.js-anim.in .check {
+      opacity: 1; transform: scale(1);
+      transition: opacity 260ms var(--ease), transform 260ms var(--ease);
+      transition-delay: calc(var(--i, 0) * 50ms + 540ms);
+    }
+
+    /* Scroll-reveal escalonado (features, tira, cierre) — solo con JS, sin reduced-motion.
+       Sin la clase .js (JS apagado) nada se oculta: el contenido siempre es visible. */
+    .js .reveal { opacity: 0; transform: translateY(12px); }
+    .js .reveal.in {
+      opacity: 1; transform: none;
+      transition: opacity 520ms var(--ease), transform 520ms var(--ease);
+      transition-delay: calc(var(--ri, 0) * 70ms);
+    }
   }
 
   @media (prefers-contrast: more) {
@@ -406,6 +428,8 @@
     .food-row, .day-card, .ticket { border-color: var(--salvia-profunda); }
   }
 </style>
+<!-- Marca JS activo ANTES del primer paint, para que el scroll-reveal no parpadee. -->
+<script>document.documentElement.classList.add('js');</script>
 </head>
 
 <body>
@@ -438,17 +462,17 @@
           </p>
 
           <ul class="bullets">
-            <li>
+            <li class="reveal" style="--ri:0">
               <span class="bullet-title">De un vistazo, sin mil clics</span>
               <span class="bullet-body">Tu día completo abierto en una pantalla:
                 desayuno, comida, cena y snacks, con sus totales a la vista. Nada que desplegar.</span>
             </li>
-            <li>
+            <li class="reveal" style="--ri:1">
               <span class="bullet-title">Registras en segundos</span>
               <span class="bullet-body">Anota lo que comiste escribiéndolo normal,
                 dictándolo o con un toque. Es un momento, no una tarea.</span>
             </li>
-            <li>
+            <li class="reveal" style="--ri:2">
               <span class="bullet-title">Sin cargos sorpresa, cancelas cuando quieras</span>
               <span class="bullet-body">Precio claro, sin renovación escondida.
                 Cancelas en un toque, sin laberintos.</span>
@@ -467,7 +491,7 @@
           <article class="day-card" id="day" aria-label="Ejemplo de un día completo en Kaloriez">
             <div class="day-top">
               <span class="day-date">
-                dom · 22 jun
+                <span class="dd-text">dom · 22 jun</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </span>
               <span class="day-icons" aria-hidden="true">
@@ -567,7 +591,7 @@
 
     <!-- ===================== Tira de prueba ===================== -->
     <section class="proof-strip" aria-label="Lo que prometemos">
-      <p>
+      <p class="reveal">
         Hecha en México <span class="sep" aria-hidden="true">·</span>
         Pago seguro <span class="sep" aria-hidden="true">·</span>
         Cancelas cuando quieras
@@ -577,9 +601,9 @@
     <!-- ===================== Cierre / apartado ===================== -->
     <section class="closing" id="apartar" aria-labelledby="closing-line">
       <div class="wrap">
-        <h2 class="closing-line" id="closing-line">¿Listo para ver tu día así de claro? Aparta tu lugar de fundador hoy.</h2>
+        <h2 class="closing-line reveal" id="closing-line">¿Listo para ver tu día así de claro? Aparta tu lugar de fundador hoy.</h2>
 
-        <div class="ticket">
+        <div class="ticket reveal" style="--ri:1">
           <p class="ticket-eyebrow">Acceso fundador · cupos limitados</p>
           <div class="ticket-price">
             <span class="ticket-amount num">$20</span>
@@ -637,6 +661,28 @@
     const counter = card.querySelector(".ring-count");
     const target = parseInt(counter.getAttribute("data-count-to"), 10);
     const fmt = function (n) { return n.toLocaleString("es-MX"); };
+
+    // Toque vivo: la tarjeta muestra la fecha real de hoy (es-MX, minúsculas).
+    (function () {
+      const el = document.querySelector("#day .dd-text");
+      if (!el) return;
+      try {
+        const now = new Date();
+        const wd = new Intl.DateTimeFormat("es-MX", { weekday: "short" }).format(now).replace(".", "");
+        const mo = new Intl.DateTimeFormat("es-MX", { month: "short" }).format(now).replace(".", "");
+        el.textContent = wd + " · " + now.getDate() + " " + mo;
+      } catch (_e) { /* deja "dom · 22 jun" por defecto */ }
+    })();
+
+    // Scroll-reveal escalonado (bullets de features, tira de prueba, cierre).
+    if (!reduce && "IntersectionObserver" in window) {
+      const revealObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add("in"); revealObserver.unobserve(e.target); }
+        });
+      }, { threshold: 0.2, rootMargin: "0px 0px -8% 0px" });
+      document.querySelectorAll(".reveal").forEach(function (el) { revealObserver.observe(el); });
+    }
 
     if (!reduce && "IntersectionObserver" in window) {
       card.classList.add("js-anim");           // arma el estado inicial (anillo vacío, filas ocultas)
