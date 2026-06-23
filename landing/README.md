@@ -38,6 +38,13 @@ esto es estático). Opciones:
   (app.netlify.com/drop).
 - **CLI:** `netlify deploy --dir=landing --prod`
 
+## Captura real de la app (opcional)
+
+La sección "Así se ve en tu teléfono" está oculta hasta que exista la imagen.
+Coloca una captura real en `landing/assets/app-screenshot.png` (un screenshot
+vertical del teléfono) y la sección **aparece sola**. Si no la pones, no se
+muestra nada roto: simplemente se omite.
+
 ## Después de publicar
 
 Manda $50–80 de tráfico mexicano (Meta/Google) y mide las tarjetas en Stripe.

@@ -327,6 +327,7 @@
     width: 100%; max-width: 440px;
     background: var(--papel);
     border: 1px solid var(--borde-tarjeta);
+    border-top: 2px solid var(--salvia);   /* acento que la marca como "la ficha de fundador" */
     border-radius: var(--r-canvas);
     box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 24px 48px -28px rgba(44,62,53,.16);
     padding: var(--space-4) var(--space-3);
@@ -360,6 +361,93 @@
     font-size: 13px; color: var(--guijarro);
   }
   .ticket-secure svg { width: 13px; height: 13px; }
+
+  /* ============================ Secciones (demo · captura · FAQ · fundador) ============================ */
+  .section-title {
+    font-family: "Fraunces", Georgia, serif; font-weight: 300;
+    font-size: clamp(26px, 3.2vw, 33px); line-height: 1.12; letter-spacing: -.4px;
+    color: var(--carbon); margin-bottom: var(--space-2);
+  }
+  .section-sub { font-size: 17px; line-height: 1.5; color: var(--piedra); max-width: 46ch; }
+  .demo .wrap, .shot .wrap, .faq .wrap, .founder .wrap {
+    padding-top: var(--space-10); padding-bottom: var(--space-10);
+  }
+
+  /* Micro-demo: escribe → calorías */
+  .demo-wrap { display: grid; grid-template-columns: 1fr; gap: var(--space-6); align-items: center; }
+  @media (min-width: 920px) { .demo-wrap { grid-template-columns: 44fr 56fr; gap: var(--space-8); } }
+  .demo-copy { max-width: var(--measure); }
+  .demo-stage { width: 100%; max-width: 460px; }
+  .demo-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--papel); border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px; padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .demo-mic { width: 20px; height: 20px; color: var(--salvia); flex-shrink: 0; }
+  .demo-input { font-size: 17px; color: var(--carbon); display: inline-flex; align-items: center; min-height: 24px; }
+  .demo-typed { white-space: pre; }
+  .demo-caret { display: inline-block; width: 2px; height: 20px; background: var(--salvia); margin-left: 2px; }
+  .demo-result { margin-top: 12px; min-height: 52px; }
+  .food-detail { color: var(--guijarro); font-weight: 300; }
+  .demo-result .food-row { opacity: 0; transform: translateY(8px); }
+  .demo-result .food-row.show { opacity: 1; transform: none; }
+
+  /* Captura real (se muestra solo si existe la imagen) */
+  .shot[hidden] { display: none; }
+  .shot-wrap { display: grid; grid-template-columns: 1fr; gap: var(--space-6); align-items: center; }
+  @media (min-width: 920px) { .shot-wrap { grid-template-columns: 1fr 1fr; gap: var(--space-8); } }
+  .shot-figure { margin: 0; display: flex; justify-content: center; }
+  .shot-img {
+    width: 100%; max-width: 300px; height: auto; border-radius: 28px;
+    border: 1px solid var(--borde-tarjeta);
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 30px 60px -30px rgba(44,62,53,.28);
+  }
+
+  /* FAQ (acordeón nativo, accesible, sin JS) */
+  .faq .wrap { max-width: 760px; }
+  .faq-title { text-align: center; margin-bottom: var(--space-5); }
+  .faq-item { border-top: 1px solid var(--borde-tarjeta); }
+  .faq-item:last-child { border-bottom: 1px solid var(--borde-tarjeta); }
+  .faq-item summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: var(--space-3) 4px; min-height: 44px;
+    font-size: 18px; font-weight: 500; color: var(--carbon);
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: ""; width: 10px; height: 10px; flex-shrink: 0;
+    border-right: 2px solid var(--salvia); border-bottom: 2px solid var(--salvia);
+    transform: rotate(45deg); transition: transform 200ms var(--ease);
+  }
+  .faq-item[open] summary::after { transform: rotate(225deg); }
+  .faq-a { padding: 0 4px var(--space-3); }
+  .faq-a p { font-size: 16px; color: var(--piedra); max-width: 64ch; line-height: 1.5; }
+
+  /* Nota del fundador */
+  .founder .wrap { max-width: 660px; text-align: center; }
+  .founder .eyebrow { text-align: center; }
+  .founder-avatar {
+    width: 56px; height: 56px; border-radius: 50%; margin: 0 auto var(--space-3);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--salvia-claro); color: var(--salvia-profunda);
+    font-family: "Fraunces", serif; font-size: 19px; letter-spacing: .5px;
+  }
+  .founder-note { margin: 0 0 var(--space-3); padding: 0; border: 0; }
+  .founder-note p {
+    font-family: "Fraunces", Georgia, serif; font-weight: 300; font-style: italic;
+    font-size: clamp(20px, 2.4vw, 24px); line-height: 1.4; color: var(--carbon);
+  }
+  .founder-sign { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+  .founder-name { font-family: "Fraunces", serif; font-style: italic; font-size: 22px; color: var(--carbon); }
+  .founder-role { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--guijarro); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .demo-caret { animation: blink 1.05s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .demo-result .food-row { transition: opacity 240ms var(--ease), transform 240ms var(--ease); }
+  }
 
   /* ============================ Footer ============================ */
   .site-footer { border-top: 1px solid var(--borde-tarjeta); }
@@ -598,6 +686,87 @@
       </p>
     </section>
 
+    <!-- ===================== Micro-demo: escribe → calorías ===================== -->
+    <section class="demo" aria-labelledby="demo-h">
+      <div class="wrap demo-wrap">
+        <div class="demo-copy reveal">
+          <p class="eyebrow">La magia, en vivo</p>
+          <h2 class="section-title" id="demo-h">Registrar es escribir y ya.</h2>
+          <p class="section-sub">Escríbelo como lo dirías en voz alta —o díctalo—. Kaloriez lo
+            reconoce y pone las calorías. Sin buscar en menús, sin formularios que llenar.</p>
+        </div>
+        <div class="demo-stage" id="demoStage" aria-hidden="true">
+          <div class="demo-bar">
+            <svg class="demo-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="demo-input"><span class="demo-typed">taco al pastor</span><span class="demo-caret"></span></span>
+          </div>
+          <div class="demo-result">
+            <div class="food-row show">
+              <span class="food-name">Taco al pastor <span class="food-detail">· 1 pza</span></span>
+              <span class="food-right"><span class="badge">est.</span><span class="food-kcal num">180</span><span class="food-unit"> kcal</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Captura real (auto-aparece si existe la imagen) ===================== -->
+    <section class="shot" id="shot" aria-labelledby="shot-h" hidden>
+      <div class="wrap shot-wrap">
+        <figure class="shot-figure">
+          <img class="shot-img" alt="Pantalla real de Kaloriez en un teléfono" data-src="assets/app-screenshot.png" />
+        </figure>
+        <div class="shot-copy reveal">
+          <p class="eyebrow">La app de verdad</p>
+          <h2 class="section-title" id="shot-h">Así se ve en tu teléfono.</h2>
+          <p class="section-sub">Sin maquetas: esto es la app corriendo. Limpia, clara, sin nada que te estorbe.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <section class="faq" aria-labelledby="faq-h">
+      <div class="wrap">
+        <h2 class="section-title faq-title reveal" id="faq-h">Antes de apartar tu lugar</h2>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>¿Funciona sin internet?</summary>
+            <div class="faq-a"><p>Sí. Registras sin conexión y todo se sincroniza solo cuando vuelves a tener internet. No se pierde nada.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Qué pasa con mis datos?</summary>
+            <div class="faq-a"><p>Son tuyos. Se guardan de forma segura y puedes borrar tu cuenta y todos tus datos cuando quieras, desde la app.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Cómo cancelo?</summary>
+            <div class="faq-a"><p>Desde tu cuenta, en un toque. Sin llamadas ni formularios. Si cancelas, no hay siguiente cargo.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Para qué es el acceso fundador?</summary>
+            <div class="faq-a"><p>Eres de los primeros. Pagas un precio congelado, ayudas a decidir qué se construye y me escribes directo. Kaloriez se hace mejor contigo.</p></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Nota del fundador ===================== -->
+    <section class="founder" aria-label="Nota del fundador">
+      <div class="wrap reveal">
+        <div class="founder-avatar" aria-hidden="true">MG</div>
+        <p class="eyebrow">Quién está detrás</p>
+        <blockquote class="founder-note">
+          <p>Hice Kaloriez por una razón simple: las apps de calorías sobrecomplican todo y
+            vuelven el registro una tarea tediosa en vez de un hábito. Yo solo quería algo claro
+            para cuidar mi alimentación día a día, sin resolver un rompecabezas cada vez que como.
+            Si a ti también te cansaron las apps-puzzle, esto lo hice para los dos.</p>
+        </blockquote>
+        <p class="founder-sign">
+          <span class="founder-name">Martín García</span>
+          <span class="founder-role">Fundador de Kaloriez</span>
+        </p>
+      </div>
+    </section>
+
     <!-- ===================== Cierre / apartado ===================== -->
     <section class="closing" id="apartar" aria-labelledby="closing-line">
       <div class="wrap">
@@ -615,7 +784,7 @@
             cualquier cargo y cancelas en un toque, sin laberintos.
           </p>
           <a class="cta" data-checkout href="mailto:contacto@kaloriez.app?subject=Acceso%20fundador%20Kaloriez">
-            Aparta tu acceso fundador — <span class="price">$20 USD</span> el primer año
+            Apartar mi lugar de fundador
           </a>
           <p class="ticket-secure">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -723,6 +892,79 @@
         if (!started) { started = true; card.classList.add("in"); countUp(); io.disconnect(); }
       }, 1400);
     }
+
+    // ── Micro-demo: escribe → aparecen las calorías ──
+    (function () {
+      const stage = document.getElementById("demoStage");
+      if (!stage) return;
+      const typed = stage.querySelector(".demo-typed");
+      const result = stage.querySelector(".demo-result");
+      const items = [
+        { q: "taco al pastor", name: "Taco al pastor", detail: "1 pza", kcal: 180, est: true },
+        { q: "huevos a la mexicana", name: "Huevos a la mexicana", detail: "1 plato", kcal: 190, est: true },
+        { q: "agua de jamaica", name: "Agua de jamaica", detail: "1 vaso", kcal: 80, est: false }
+      ];
+      const check = '<svg class="check" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#F5F3EF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      function rowHTML(it) {
+        const tag = it.est ? '<span class="badge">est.</span>' : check;
+        return '<div class="food-row"><span class="food-name">' + it.name +
+          ' <span class="food-detail">· ' + it.detail + '</span></span>' +
+          '<span class="food-right">' + tag +
+          '<span class="food-kcal num">' + it.kcal + '</span><span class="food-unit"> kcal</span></span></div>';
+      }
+      if (reduce || !("IntersectionObserver" in window)) {
+        typed.textContent = items[0].q;
+        result.innerHTML = rowHTML(items[0]);
+        result.querySelector(".food-row").classList.add("show");
+        return;
+      }
+      let i = 0;
+      const wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+      async function typeText(t) {
+        typed.textContent = "";
+        for (let c = 0; c < t.length; c++) { typed.textContent += t.charAt(c); await wait(55); }
+      }
+      async function loop() {
+        result.innerHTML = ""; typed.textContent = "";   // limpia el ejemplo estático
+        while (true) {
+          const it = items[i % items.length];
+          await typeText(it.q);
+          await wait(440);
+          result.innerHTML = rowHTML(it);
+          const row = result.querySelector(".food-row");
+          void row.offsetWidth;                            // fuerza reflow para que transicione
+          row.classList.add("show");
+          await wait(2400);
+          row.classList.remove("show");
+          await wait(380);
+          result.innerHTML = "";
+          await wait(260);
+          i++;
+        }
+      }
+      let demoStarted = false;
+      const demoIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting && !demoStarted) { demoStarted = true; loop(); demoIO.disconnect(); }
+        });
+      }, { threshold: 0.4 });
+      demoIO.observe(stage);
+    })();
+
+    // ── Captura real: muestra la sección solo si existe la imagen ──
+    (function () {
+      const sec = document.getElementById("shot");
+      if (!sec) return;
+      const img = sec.querySelector(".shot-img");
+      const src = img && img.getAttribute("data-src");
+      if (!src) return;
+      img.addEventListener("load", function () {
+        sec.hidden = false;
+        sec.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
+      });
+      img.addEventListener("error", function () { /* sin imagen: la sección queda oculta */ });
+      img.src = src;
+    })();
   </script>
 </body>
 </html>
