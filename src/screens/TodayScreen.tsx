@@ -54,11 +54,13 @@ export function TodayScreen() {
     const [focusTrigger, setFocusTrigger] = useState(0);
     // Non-blocking "I detected this — fix it?" review of the last AI entry.
     const [reviewEntry, setReviewEntry] = useState<FoodEntry | null>(null);
+    const [reviewDetail, setReviewDetail] = useState<string | undefined>(undefined);
     const reviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const showReview = useCallback((entry: FoodEntry) => {
+    const showReview = useCallback((entry: FoodEntry, detail?: string) => {
         if (reviewTimer.current) clearTimeout(reviewTimer.current);
         setReviewEntry(entry);
+        setReviewDetail(detail);
         reviewTimer.current = setTimeout(() => setReviewEntry(null), 6000);
     }, []);
 
@@ -229,7 +231,7 @@ export function TodayScreen() {
                 return;
             }
             
-            const { calories, source, name } = await detectCalories(sanitizedText);
+            const { calories, source, name, detail } = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: generateId(),
@@ -243,7 +245,7 @@ export function TodayScreen() {
             };
             setEntries(prev => [newEntry, ...prev]);
             if (user) addEntryRemote(user.id, newEntry);
-            showReview(newEntry);
+            showReview(newEntry, detail);
             setProcessingState('done');
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setTimeout(() => setProcessingState('idle'), 300);
@@ -446,6 +448,9 @@ export function TodayScreen() {
                                 <Text style={styles.reviewText} numberOfLines={1}>
                                     {reviewEntry.name} · {reviewEntry.calories} kcal
                                 </Text>
+                                {reviewDetail && (
+                                    <Text style={styles.reviewSub} numberOfLines={1}>{reviewDetail}</Text>
+                                )}
                             </View>
                             <Pressable
                                 style={styles.reviewEditBtn}
@@ -577,6 +582,11 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '400',
         color: colors.textPrimary,
+    },
+    reviewSub: {
+        fontSize: 12,
+        color: colors.textMuted,
+        marginTop: 1,
     },
     reviewEditBtn: {
         paddingVertical: 8,

@@ -41,8 +41,8 @@ export function MealSection({
                 <View style={styles.entriesContainer}>
                     {entries.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyText}>No items yet</Text>
-                            <Text style={styles.emptySubtext}>Tap + to add</Text>
+                            <Text style={styles.emptyText}>Sin registros</Text>
+                            <Text style={styles.emptySubtext}>Toca + para agregar</Text>
                         </View>
                     ) : (
                         entries.map((entry) => (

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TextInput, TextInputProps, StyleSheet, TextStyle, Platform } from 'react-native';
+import { Text, TextInput, TextInputProps, StyleSheet, TextStyle, Platform } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedProps,
@@ -19,6 +19,12 @@ interface RollingNumberProps extends Omit<TextInputProps, 'value'> {
 }
 
 export function RollingNumber({ value, style, duration = 800, ...rest }: RollingNumberProps) {
+    // The animated `text` native prop trick is native-only; on web it renders
+    // blank. Fall back to a plain Text there so the calorie total is visible.
+    if (Platform.OS === 'web') {
+        return <Text style={[styles.base, style]}>{Math.round(value)}</Text>;
+    }
+
     // Current animated value
     const animatedValue = useSharedValue(value);
 

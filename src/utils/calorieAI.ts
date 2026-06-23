@@ -77,7 +77,15 @@ import { CalorieSource } from '../types';
 export interface CalorieResult {
     calories: number;
     source: CalorieSource;
-    name?: string; // AI-resolved, cleaned food name (Spanish) when available
+    name?: string;   // AI-resolved, cleaned food name (Spanish) when available
+    detail?: string; // assumed portion description (e.g. "Coca personal, 355ml")
+}
+
+// Strip the trailing "(USDA verified)"/"(AI estimate)" suffix — the badge already conveys it.
+function cleanDetail(d?: string): string | undefined {
+    if (!d) return undefined;
+    const out = d.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    return out || undefined;
 }
 
 export async function detectCalories(input: string): Promise<CalorieResult> {
@@ -95,6 +103,7 @@ export async function detectCalories(input: string): Promise<CalorieResult> {
                     calories: Math.round(aiCalories),
                     source: top.verified ? 'verified' : 'estimate',
                     name: top.name,
+                    detail: cleanDetail(top.description),
                 };
             }
         }
