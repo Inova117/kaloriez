@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, View, Text, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MainApp } from './src/screens/MainApp';
 import { OnboardingScreen, HAS_COMPLETED_ONBOARDING_KEY } from './src/screens/OnboardingScreen';
@@ -24,9 +24,12 @@ Sentry.init({
 
   // Session Replay (text/images are masked by default in the RN SDK). Only
   // capture on errors to minimise data collection until a consent flow exists.
+  // mobileReplay/feedback are native-only — exclude on web so it can run.
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+  integrations: Platform.OS === 'web'
+    ? []
+    : [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,

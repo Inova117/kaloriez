@@ -7,13 +7,13 @@ import {
     Pressable,
     KeyboardAvoidingView,
     Platform,
-    Alert,
     ActivityIndicator,
     ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { notify } from '../utils/notify';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
@@ -30,25 +30,25 @@ export function AuthScreen() {
     const handleSubmit = async () => {
         // Validate email and password
         if (!email || !password) {
-            Alert.alert('Error', 'Por favor llena todos los campos');
+            notify('Error', 'Por favor llena todos los campos');
             return;
         }
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) {
-            Alert.alert('Correo inválido', 'Ingresa un correo electrónico válido');
+            notify('Correo inválido', 'Ingresa un correo electrónico válido');
             return;
         }
 
         // Validate password strength
         if (password.length < 8) {
-            Alert.alert('Contraseña débil', 'La contraseña debe tener al menos 8 caracteres');
+            notify('Contraseña débil', 'La contraseña debe tener al menos 8 caracteres');
             return;
         }
 
         if (!isLogin && !fullName) {
-            Alert.alert('Error', 'Por favor ingresa tu nombre');
+            notify('Error', 'Por favor ingresa tu nombre');
             return;
         }
 
@@ -61,18 +61,17 @@ export function AuthScreen() {
             if (isLogin) {
                 const { error } = await signIn(email, password);
                 if (error) {
-                    Alert.alert('No se pudo iniciar sesión', error.message);
+                    notify('No se pudo iniciar sesión', error.message);
                 }
             } else {
                 const { error } = await signUp(email.trim(), password, sanitizedName);
                 if (error) {
-                    Alert.alert('No se pudo crear la cuenta', error.message);
+                    notify('No se pudo crear la cuenta', error.message);
                 } else {
-                    Alert.alert(
-                        '¡Listo!',
-                        'Revisa tu correo para verificar tu cuenta.',
-                        [{ text: 'OK', onPress: () => setIsLogin(true) }]
-                    );
+                    // If email confirmation is ON, there's no session yet — guide
+                    // the user. If it's OFF, the auth listener logs them straight in.
+                    notify('¡Listo!', 'Si te pedimos verificación, revisa tu correo. Si no, ya puedes iniciar sesión.');
+                    setIsLogin(true);
                 }
             }
         } finally {
