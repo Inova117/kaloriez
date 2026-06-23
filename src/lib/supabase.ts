@@ -3,9 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
 import { logger } from '../utils/logger';
 
-// Environment variables
-const supabaseUrl = SUPABASE_URL || '';
-const supabaseAnonKey = SUPABASE_ANON_KEY || '';
+// Prefer EXPO_PUBLIC_* (inlined by Expo at build time, so standalone EAS builds
+// get them via eas.json env). Fall back to @env / react-native-dotenv for local
+// dev. The anon key is public by design (gated by RLS), so embedding it is safe.
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     logger.warn('⚠️ Missing Supabase credentials. Please check your .env file.');
