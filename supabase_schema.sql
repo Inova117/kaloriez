@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS food_entries (
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS source TEXT;
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS portion_grams NUMERIC;
 
+-- quick_add_items doubles as the unified favorites store. emoji is optional
+-- (the UI no longer uses emojis) and we carry the portion through. Idempotent.
+ALTER TABLE quick_add_items ALTER COLUMN emoji DROP NOT NULL;
+ALTER TABLE quick_add_items ADD COLUMN IF NOT EXISTS portion_grams NUMERIC;
+
 -- Create quick_add_items table
 CREATE TABLE IF NOT EXISTS quick_add_items (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

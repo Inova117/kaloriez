@@ -18,7 +18,9 @@ export type SyncOp =
     | { kind: 'food_upsert'; row: Record<string, unknown> }
     | { kind: 'food_update'; id: string; patch: Record<string, unknown> }
     | { kind: 'food_delete'; id: string }
-    | { kind: 'weight_upsert'; row: Record<string, unknown> };
+    | { kind: 'weight_upsert'; row: Record<string, unknown> }
+    | { kind: 'favorite_upsert'; row: Record<string, unknown> }
+    | { kind: 'favorite_delete'; id: string };
 
 const QUEUE_KEY = '@sync_queue';
 
@@ -89,6 +91,12 @@ async function apply(op: SyncOp): Promise<void> {
         const { error } = await supabase
             .from('weight_entries')
             .upsert(op.row, { onConflict: 'user_id,date' });
+        if (error) throw error;
+    } else if (op.kind === 'favorite_upsert') {
+        const { error } = await supabase.from('quick_add_items').upsert(op.row, { onConflict: 'id' });
+        if (error) throw error;
+    } else if (op.kind === 'favorite_delete') {
+        const { error } = await supabase.from('quick_add_items').delete().eq('id', op.id);
         if (error) throw error;
     }
 }

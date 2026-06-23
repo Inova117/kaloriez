@@ -8,11 +8,14 @@ import { ProfileScreen } from './ProfileScreen';
 import { TabNavigator } from '../components/TabNavigator';
 import { SyncStatusPill } from '../components/SyncStatusPill';
 import { colors } from '../theme/colors';
+import { QuickAddItem } from '../types';
 
 type TabName = 'today' | 'favorites' | 'stats' | 'profile';
 
 export function MainApp() {
     const [activeTab, setActiveTab] = useState<TabName>('today');
+    // A favorite tapped on the Favorites tab is handed to Today to be added.
+    const [pendingAdd, setPendingAdd] = useState<QuickAddItem | null>(null);
 
     const handleTabChange = (tab: TabName) => {
         setActiveTab(tab);
@@ -21,15 +24,22 @@ export function MainApp() {
     const renderContent = () => {
         switch (activeTab) {
             case 'today':
-                return <TodayScreen />;
+                return <TodayScreen pendingAdd={pendingAdd} onPendingAddConsumed={() => setPendingAdd(null)} />;
             case 'favorites':
-                return <FavoritesScreen onAddToToday={() => setActiveTab('today')} />;
+                return (
+                    <FavoritesScreen
+                        onAddToToday={(item) => {
+                            setPendingAdd(item);
+                            setActiveTab('today');
+                        }}
+                    />
+                );
             case 'stats':
                 return <StatsScreen onClose={() => setActiveTab('today')} />;
             case 'profile':
                 return <ProfileScreen onClose={() => setActiveTab('today')} />;
             default:
-                return <TodayScreen />;
+                return <TodayScreen pendingAdd={pendingAdd} onPendingAddConsumed={() => setPendingAdd(null)} />;
         }
     };
 

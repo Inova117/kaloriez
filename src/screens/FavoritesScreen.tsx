@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -11,58 +11,34 @@ import {
     Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { MealType, MEAL_CONFIGS } from '../types';
-import { logger } from '../utils/logger';
-
-const FAVORITES_STORAGE_KEY = '@favorite_items';
-
-export interface FavoriteItem {
-    id: string;
-    name: string;
-    calories: number;
-    mealType: MealType;
-    isCustom: boolean;
-}
+import { QuickAddItem } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import {
+    fetchFavorites,
+    addFavorite,
+    updateFavorite,
+    removeFavorite,
+    Favorite,
+} from '../services/favoritesRepository';
 
 interface FavoritesScreenProps {
-    onAddToToday: (item: FavoriteItem) => void;
+    onAddToToday: (item: QuickAddItem) => void;
 }
 
 export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
-    const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+    const { user } = useAuth();
+    const [favorites, setFavorites] = useState<Favorite[]>([]);
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
-    const [selectedFavorite, setSelectedFavorite] = useState<FavoriteItem | null>(null);
+    const [selectedFavorite, setSelectedFavorite] = useState<Favorite | null>(null);
     const [editName, setEditName] = useState('');
     const [editCalories, setEditCalories] = useState('');
 
     useEffect(() => {
-        loadFavorites();
-    }, []);
-
-    const loadFavorites = async () => {
-        try {
-            const stored = await AsyncStorage.getItem(FAVORITES_STORAGE_KEY);
-            if (stored) {
-                setFavorites(JSON.parse(stored));
-            }
-        } catch (error) {
-            logger.error('Failed to load favorites', error);
-        }
-    };
-
-    const saveFavorites = async (items: FavoriteItem[]) => {
-        try {
-            await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(items));
-            setFavorites(items);
-        } catch (error) {
-            logger.error('Failed to save favorites', error);
-        }
-    };
+        if (user) fetchFavorites(user.id).then(setFavorites);
+    }, [user?.id]);
 
     const handleAddNew = () => {
         setSelectedFavorite(null);
@@ -71,47 +47,37 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
         setEditModalVisible(true);
     };
 
-    const handleEdit = (item: FavoriteItem) => {
+    const handleEdit = (item: Favorite) => {
         setSelectedFavorite(item);
         setEditName(item.name);
         setEditCalories(item.calories.toString());
         setEditModalVisible(true);
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
+        if (!user) return;
         const trimmedName = editName.trim();
-        const parsedCalories = parseInt(editCalories);
+        const parsedCalories = parseInt(editCalories, 10);
 
-        if (!trimmedName || parsedCalories <= 0) {
+        if (!trimmedName || !(parsedCalories > 0)) {
             Alert.alert('Datos inválidos', 'Ingresa un nombre y calorías válidos.');
             return;
         }
 
         if (selectedFavorite) {
-            // Edit existing
-            const updated = favorites.map(f =>
-                f.id === selectedFavorite.id
-                    ? { ...f, name: trimmedName, calories: parsedCalories }
-                    : f
-            );
-            saveFavorites(updated);
+            const updated: Favorite = { ...selectedFavorite, name: trimmedName, calories: parsedCalories };
+            setFavorites(prev => prev.map(f => (f.id === updated.id ? updated : f)));
+            updateFavorite(user.id, updated);
         } else {
-            // Add new
-            const newFavorite: FavoriteItem = {
-                id: Date.now().toString(),
-                name: trimmedName,
-                calories: parsedCalories,
-                mealType: 'snacks',
-                isCustom: true,
-            };
-            saveFavorites([...favorites, newFavorite]);
+            const fav = await addFavorite(user.id, { name: trimmedName, calories: parsedCalories });
+            setFavorites(prev => [fav, ...prev]);
         }
 
         setEditModalVisible(false);
         if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
 
-    const handleLongPress = (item: FavoriteItem) => {
+    const handleLongPress = (item: Favorite) => {
         setSelectedFavorite(item);
         setMenuVisible(true);
         if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -119,9 +85,7 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
 
     const handleEditOption = () => {
         setMenuVisible(false);
-        if (selectedFavorite) {
-            handleEdit(selectedFavorite);
-        }
+        if (selectedFavorite) handleEdit(selectedFavorite);
     };
 
     const handleDeleteOption = () => {
@@ -133,23 +97,26 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                 text: 'Eliminar',
                 style: 'destructive',
                 onPress: () => {
-                    saveFavorites(favorites.filter(f => f.id !== selectedFavorite.id));
+                    setFavorites(prev => prev.filter(f => f.id !== selectedFavorite.id));
+                    removeFavorite(selectedFavorite.id);
                     if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 }
             }
         ]);
     };
 
-    const handleAddToToday = (item: FavoriteItem) => {
-        onAddToToday(item);
+    const handleAddToToday = (item: Favorite) => {
+        onAddToToday({ id: item.id, name: item.name, emoji: '', calories: item.calories });
         if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
 
-    const renderFavorite = ({ item }: { item: FavoriteItem }) => (
+    const renderFavorite = ({ item }: { item: Favorite }) => (
         <Pressable
             style={styles.favoriteCard}
             onPress={() => handleAddToToday(item)}
             onLongPress={() => handleLongPress(item)}
+            accessibilityRole="button"
+            accessibilityLabel={`Agregar ${item.name}, ${item.calories} kilocalorías`}
         >
             <View style={styles.info}>
                 <Text style={styles.name}>{item.name}</Text>
@@ -189,22 +156,13 @@ export function FavoritesScreen({ onAddToToday }: FavoritesScreenProps) {
                 animationType="fade"
                 onRequestClose={() => setMenuVisible(false)}
             >
-                <Pressable
-                    style={styles.menuBackdrop}
-                    onPress={() => setMenuVisible(false)}
-                >
+                <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)}>
                     <View style={styles.menuContainer}>
-                        <Pressable
-                            style={styles.menuOption}
-                            onPress={handleEditOption}
-                        >
+                        <Pressable style={styles.menuOption} onPress={handleEditOption}>
                             <Text style={styles.menuText}>Editar</Text>
                         </Pressable>
                         <View style={styles.menuDivider} />
-                        <Pressable
-                            style={styles.menuOption}
-                            onPress={handleDeleteOption}
-                        >
+                        <Pressable style={styles.menuOption} onPress={handleDeleteOption}>
                             <Text style={[styles.menuText, styles.menuTextDanger]}>Eliminar</Text>
                         </Pressable>
                     </View>
@@ -302,9 +260,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         borderWidth: 1,
         borderColor: colors.cardBorder,
-    },
-    favoriteContent: {
-        flex: 1,
     },
     info: {
         flex: 1,

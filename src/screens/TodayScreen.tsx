@@ -17,7 +17,7 @@ import { CalendarModal } from '../components/CalendarModal';
 import { EmptyState } from '../components/EmptyState';
 import { StatsScreen } from './StatsScreen';
 import { colors } from '../theme/colors';
-import { FoodEntry, QuickAddItem, ProcessingState, MEAL_CONFIGS, MealType } from '../types';
+import { FoodEntry, QuickAddItem, ProcessingState, MealType } from '../types';
 import { detectCalories } from '../utils/calorieAI';
 import { processAudioDictation, PortionOption } from '../lib/foodAI';
 import { getMealTypeFromTime } from '../utils/mealUtils';
@@ -29,6 +29,13 @@ import {
     updateEntryRemote,
     deleteEntryRemote,
 } from '../services/entriesRepository';
+import {
+    fetchFavorites,
+    addFavorite,
+    removeFavorite,
+    bumpUsage,
+    Favorite,
+} from '../services/favoritesRepository';
 import { useAuth } from '../contexts/AuthContext';
 import { generateId } from '../utils/id';
 import { logger } from '../utils/logger';
@@ -36,9 +43,15 @@ import { logger } from '../utils/logger';
 const GOAL_STORAGE_KEY = '@daily_goal';
 const DEFAULT_GOAL = 2000;
 
-export function TodayScreen() {
+interface TodayScreenProps {
+    pendingAdd?: QuickAddItem | null;
+    onPendingAddConsumed?: () => void;
+}
+
+export function TodayScreen({ pendingAdd, onPendingAddConsumed }: TodayScreenProps = {}) {
     const { user } = useAuth();
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
+    const [favorites, setFavorites] = useState<Favorite[]>([]);
     const [entries, setEntries] = useState<FoodEntry[]>([]);
     const [processingState, setProcessingState] = useState<ProcessingState>('idle');
     const [menuVisible, setMenuVisible] = useState(false);
@@ -132,26 +145,19 @@ export function TodayScreen() {
         setFocusTrigger(prev => prev + 1);
     };
 
-    // Generate quick add items from favorites
-    const quickAddItems = useMemo<QuickAddItem[]>(() => {
-        const uniqueFavorites = new Map<string, QuickAddItem>();
-        const favoriteEntries = entries.filter(e => e.isFavorite);
+    // Quick-add chips come from the persistent favorites list (most-used first),
+    // so they're available every day, not just for foods favorited today.
+    const quickAddItems = useMemo<QuickAddItem[]>(
+        () => favorites.slice(0, 8).map(f => ({ id: f.id, name: f.name, emoji: '', calories: f.calories })),
+        [favorites]
+    );
 
-        favoriteEntries.forEach(entry => {
-            const key = `${entry.name}-${entry.calories}`;
-            if (!uniqueFavorites.has(key)) {
-                const mealConfig = MEAL_CONFIGS[entry.mealType || 'snacks'];
-                uniqueFavorites.set(key, {
-                    id: entry.id,
-                    name: entry.name,
-                    emoji: mealConfig.icon,
-                    calories: entry.calories,
-                });
-            }
-        });
+    const loadFavorites = useCallback(async () => {
+        if (!user) return;
+        setFavorites(await fetchFavorites(user.id));
+    }, [user?.id]);
 
-        return Array.from(uniqueFavorites.values()).slice(0, 5);
-    }, [entries]);
+    useEffect(() => { loadFavorites(); }, [loadFavorites]);
 
     useEffect(() => {
         loadDailyGoal();
@@ -304,6 +310,7 @@ export function TodayScreen() {
 
     const handleQuickAdd = useCallback(async (item: QuickAddItem) => {
         try {
+            const fav = favorites.find(f => f.id === item.id);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: generateId(),
@@ -312,14 +319,27 @@ export function TodayScreen() {
                 isFavorite: false,
                 timestamp: currentDate,
                 mealType,
+                portionGrams: fav?.portionGrams,
             };
             setEntries(prev => [newEntry, ...prev]);
-            if (user) addEntryRemote(user.id, newEntry);
+            if (user) {
+                addEntryRemote(user.id, newEntry);
+                if (fav) bumpUsage(user.id, fav); // most-used floats to the top
+            }
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } catch (error) {
             logger.error('Failed to add quick item', error);
         }
-    }, [currentDate, user?.id]);
+    }, [currentDate, user?.id, favorites]);
+
+    // Consume a favorite tapped on the Favorites tab (handed in via MainApp).
+    useEffect(() => {
+        if (pendingAdd) {
+            handleQuickAdd(pendingAdd);
+            onPendingAddConsumed?.();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pendingAdd]);
 
     // Tap a card = quick edit (grams/calories). Favorite/move/delete live in the
     // long-press menu.
@@ -379,13 +399,24 @@ export function TodayScreen() {
         updateEntryRemote(updated);
     }, [selectedEntry]);
 
-    const handleToggleFavorite = useCallback(() => {
+    const handleToggleFavorite = useCallback(async () => {
         setMenuVisible(false);
-        if (!selectedEntry) return;
-        const updated = { ...selectedEntry, isFavorite: !selectedEntry.isFavorite };
-        setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
-        updateEntryRemote(updated);
-    }, [selectedEntry]);
+        if (!selectedEntry || !user) return;
+        const existing = favorites.find(f => f.name.toLowerCase() === selectedEntry.name.toLowerCase());
+        if (existing) {
+            removeFavorite(existing.id);
+            setFavorites(prev => prev.filter(f => f.id !== existing.id));
+            setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, isFavorite: false } : e));
+        } else {
+            const fav = await addFavorite(user.id, {
+                name: selectedEntry.name,
+                calories: selectedEntry.calories,
+                portionGrams: selectedEntry.portionGrams,
+            });
+            setFavorites(prev => [fav, ...prev]);
+            setEntries(prev => prev.map(e => e.id === selectedEntry.id ? { ...e, isFavorite: true } : e));
+        }
+    }, [selectedEntry, user?.id, favorites]);
 
     const handleDateChange = (newDate: Date) => { dismissReview(); setCurrentDate(newDate); };
     const handleDateSelect = (date: Date) => { dismissReview(); setCurrentDate(date); };
