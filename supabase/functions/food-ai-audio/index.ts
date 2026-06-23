@@ -110,7 +110,12 @@ async function enrichSuggestions(parsed: any[]): Promise<any[]> {
         const usda = await usdaLookup(lookupName);
         let usdaCalories: number | null = null;
         if (usda && usdaMatches(lookupName, usda.description)) {
-            usdaCalories = Math.round((usda.kcal / 100) * portionGrams);
+            const candidate = Math.round((usda.kcal / 100) * portionGrams);
+            // Agreement gate: trust USDA (and "verified") only when it roughly
+            // matches the AI estimate; large divergence ⇒ suspect match.
+            if (ai == null || (candidate >= ai * 0.6 && candidate <= ai * 1.6)) {
+                usdaCalories = candidate;
+            }
         }
 
         const calories = usdaCalories ?? ai;
@@ -144,6 +149,8 @@ PASO 4 - Salida: arreglo JSON, cada item: name (limpio, EN ESPAÑOL, Title Case)
 REGLAS:
 - Lista CADA alimento por separado. NO los combines.
 - Si se menciona una cantidad, calcula para ESA cantidad.
+- Para cantidades, calcula POR UNIDAD y multiplica de forma consistente (3 ceviches = 3 × un ceviche).
+- Usa tamaños/porciones realistas; no exageres la porción.
 - Devuelve SOLO un arreglo JSON válido. Sin markdown, sin texto extra.`;
 
 Deno.serve(async (req: Request) => {

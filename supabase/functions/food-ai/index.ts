@@ -144,7 +144,14 @@ async function enrichSuggestions(parsed: any[]): Promise<any[]> {
         const usda = await usdaLookup(lookupName);
         let usdaCalories: number | null = null;
         if (usda && usdaMatches(lookupName, usda.description)) {
-            usdaCalories = Math.round((usda.kcal / 100) * portionGrams);
+            const candidate = Math.round((usda.kcal / 100) * portionGrams);
+            // Agreement gate: only trust USDA (and stamp "verified") when the
+            // model gave no number, or USDA roughly agrees with the AI estimate.
+            // A large divergence means a wrong-food/wrong-portion match (common
+            // for Latin dishes like ceviche), so we keep the AI estimate instead.
+            if (ai == null || (candidate >= ai * 0.6 && candidate <= ai * 1.6)) {
+                usdaCalories = candidate;
+            }
         }
 
         const calories = usdaCalories ?? ai;
@@ -195,6 +202,8 @@ PASO 3 - Formato de salida:
 
 REGLAS:
 - Si el usuario menciona cantidad (2 huevos, 200g de pollo), calcula para ESA cantidad, no para 100g.
+- Para cantidades, calcula POR UNIDAD y multiplica por la cantidad, de forma consistente (p.ej. 3 ceviches = 3 × las calorías de un ceviche).
+- Usa tamaños/porciones realistas del platillo; no exageres la porción.
 - Si no hay cantidad, asume 1 porción típica.
 - NUNCA inventes números a la ligera — es clave que el usuario confíe en estos datos.
 - Devuelve SOLO JSON válido. Sin markdown, sin texto extra.`;
