@@ -17,6 +17,7 @@ export interface FoodEntry {
     timestamp: Date;
     mealType: MealType;
     source?: CalorieSource;
+    portionGrams?: number; // assumed/edited portion weight; links grams <-> calories
 }
 
 export interface QuickAddItem {

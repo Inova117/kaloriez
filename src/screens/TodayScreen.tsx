@@ -245,7 +245,7 @@ export function TodayScreen() {
                 return;
             }
             
-            const { calories, source, name, detail, options } = await detectCalories(sanitizedText);
+            const { calories, source, name, detail, options, portionGrams } = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
             const newEntry: FoodEntry = {
                 id: generateId(),
@@ -256,6 +256,7 @@ export function TodayScreen() {
                 timestamp: currentDate,
                 mealType,
                 source,
+                portionGrams,
             };
             setEntries(prev => [newEntry, ...prev]);
             if (user) addEntryRemote(user.id, newEntry);
@@ -320,10 +321,11 @@ export function TodayScreen() {
         }
     }, [currentDate, user?.id]);
 
+    // Tap a card = quick edit (grams/calories). Favorite/move/delete live in the
+    // long-press menu.
     const handleCardPress = useCallback((entry: FoodEntry) => {
-        const updated = { ...entry, isFavorite: !entry.isFavorite };
-        setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
-        updateEntryRemote(updated);
+        setSelectedEntry(entry);
+        setEditModalVisible(true);
     }, []);
 
     const handleCardLongPress = useCallback(async (entry: FoodEntry) => {
@@ -337,14 +339,19 @@ export function TodayScreen() {
         setTimeout(() => setEditModalVisible(true), 100);
     };
 
-    const handleSaveEdit = (newName: string, newCalories: number) => {
+    const handleSaveEdit = (newName: string, newCalories: number, newGrams?: number) => {
         if (!selectedEntry) return;
         const trimmed = newName.trim();
-        // Honour the calories the user explicitly typed instead of re-estimating
-        // them from the name (which silently discarded their correction).
+        // Honour the calories the user explicitly typed instead of re-estimating.
         if (!trimmed || !Number.isFinite(newCalories) || newCalories <= 0) return;
         // A manual correction is user-authoritative — clear any AI/estimate badge.
-        const updated = { ...selectedEntry, name: trimmed, calories: Math.round(newCalories), source: undefined };
+        const updated = {
+            ...selectedEntry,
+            name: trimmed,
+            calories: Math.round(newCalories),
+            portionGrams: newGrams,
+            source: undefined,
+        };
         setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
         updateEntryRemote(updated);
     };
@@ -374,8 +381,11 @@ export function TodayScreen() {
 
     const handleToggleFavorite = useCallback(() => {
         setMenuVisible(false);
-        if (selectedEntry) handleCardPress(selectedEntry); // Reuse logic
-    }, [selectedEntry, handleCardPress]);
+        if (!selectedEntry) return;
+        const updated = { ...selectedEntry, isFavorite: !selectedEntry.isFavorite };
+        setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
+        updateEntryRemote(updated);
+    }, [selectedEntry]);
 
     const handleDateChange = (newDate: Date) => { dismissReview(); setCurrentDate(newDate); };
     const handleDateSelect = (date: Date) => { dismissReview(); setCurrentDate(date); };

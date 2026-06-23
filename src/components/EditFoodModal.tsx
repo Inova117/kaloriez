@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -17,19 +17,27 @@ import { FoodEntry } from '../types';
 interface EditFoodModalProps {
     visible: boolean;
     entry: FoodEntry | null;
-    onSave: (newName: string, newCalories: number) => void;
+    onSave: (newName: string, newCalories: number, newGrams?: number) => void;
     onClose: () => void;
 }
 
 export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModalProps) {
     const [text, setText] = useState('');
     const [calories, setCalories] = useState('');
+    const [grams, setGrams] = useState('');
+    // kcal per gram, so editing grams can recompute calories. null = unknown.
+    const densityRef = useRef<number | null>(null);
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         if (visible && entry) {
             setText(entry.name);
             setCalories(entry.calories.toString());
+            setGrams(entry.portionGrams ? String(entry.portionGrams) : '');
+            densityRef.current =
+                entry.portionGrams && entry.portionGrams > 0 && entry.calories > 0
+                    ? entry.calories / entry.portionGrams
+                    : null;
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 200,
@@ -44,12 +52,33 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
         }
     }, [visible, entry]);
 
+    // Editing grams recomputes calories when we know the density.
+    const handleGramsChange = (g: string) => {
+        setGrams(g);
+        const gv = parseFloat(g);
+        if (densityRef.current != null && Number.isFinite(gv) && gv > 0) {
+            setCalories(String(Math.round(densityRef.current * gv)));
+        }
+    };
+
+    // Editing calories directly is authoritative; refresh density if grams known.
+    const handleCaloriesChange = (c: string) => {
+        setCalories(c);
+        const cv = parseInt(c, 10);
+        const gv = parseFloat(grams);
+        if (Number.isFinite(cv) && cv > 0 && Number.isFinite(gv) && gv > 0) {
+            densityRef.current = cv / gv;
+        }
+    };
+
     const handleSave = () => {
         const trimmedName = text.trim();
-        const parsedCalories = parseInt(calories);
-        
+        const parsedCalories = parseInt(calories, 10);
+        const gv = parseFloat(grams);
+        const parsedGrams = Number.isFinite(gv) && gv > 0 ? gv : undefined;
+
         if (trimmedName.length > 0 && parsedCalories > 0) {
-            onSave(trimmedName, parsedCalories);
+            onSave(trimmedName, parsedCalories, parsedGrams);
             onClose();
         }
     };
@@ -88,16 +117,27 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
                             selectionColor={colors.accent}
                         />
 
-                        <TextInput
-                            style={styles.input}
-                            value={calories}
-                            onChangeText={setCalories}
-                            placeholder="Calorías"
-                            placeholderTextColor={colors.textDimmed}
-                            keyboardType="numeric"
-                            onSubmitEditing={handleSave}
-                            selectionColor={colors.accent}
-                        />
+                        <View style={styles.fieldRow}>
+                            <TextInput
+                                style={[styles.input, styles.fieldHalf]}
+                                value={grams}
+                                onChangeText={handleGramsChange}
+                                placeholder="Gramos"
+                                placeholderTextColor={colors.textDimmed}
+                                keyboardType="numeric"
+                                selectionColor={colors.accent}
+                            />
+                            <TextInput
+                                style={[styles.input, styles.fieldHalf]}
+                                value={calories}
+                                onChangeText={handleCaloriesChange}
+                                placeholder="Calorías"
+                                placeholderTextColor={colors.textDimmed}
+                                keyboardType="numeric"
+                                onSubmitEditing={handleSave}
+                                selectionColor={colors.accent}
+                            />
+                        </View>
 
                         <View style={styles.buttons}>
                             <Pressable style={styles.button} onPress={onClose}>
@@ -158,6 +198,15 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderWidth: 1,
         borderColor: colors.cardBorder,
+    },
+    fieldRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginHorizontal: 16,
+    },
+    fieldHalf: {
+        flex: 1,
+        marginHorizontal: 0,
     },
     buttons: {
         flexDirection: 'row',

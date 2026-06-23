@@ -80,6 +80,7 @@ export interface CalorieResult {
     name?: string;   // AI-resolved, cleaned food name (Spanish) when available
     detail?: string; // assumed portion description (e.g. "Coca personal, 355ml")
     options?: PortionOption[]; // one-tap size choices when the portion is ambiguous
+    portionGrams?: number;     // assumed portion weight (links grams <-> calories)
 }
 
 // Strip the trailing "(USDA verified)"/"(AI estimate)" suffix — the badge already conveys it.
@@ -106,6 +107,7 @@ export async function detectCalories(input: string): Promise<CalorieResult> {
                     name: top.name,
                     detail: cleanDetail(top.description),
                     options: top.options,
+                    portionGrams: top.portionGrams,
                 };
             }
         }

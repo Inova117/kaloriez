@@ -168,6 +168,7 @@ async function enrichSuggestions(parsed: any[]): Promise<any[]> {
         return {
             name,
             calories,
+            portionGrams,
             verified: usdaCalories != null,
             description: s?.description
                 ? `${s.description}${usdaCalories != null ? " (USDA verified)" : " (AI estimate)"}`

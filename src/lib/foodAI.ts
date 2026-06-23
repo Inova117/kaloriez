@@ -13,6 +13,7 @@ export interface FoodSuggestion {
     description?: string;
     verified?: boolean; // true when the calories came from USDA ground truth
     options?: PortionOption[]; // size choices, only when the portion is ambiguous
+    portionGrams?: number;     // assumed portion weight
 }
 
 function mapOptions(raw: unknown): PortionOption[] {
@@ -34,6 +35,9 @@ function mapSuggestions(raw: unknown): FoodSuggestion[] {
             description: s?.description,
             verified: s?.verified === true,
             options: mapOptions(s?.options),
+            portionGrams: Number.isFinite(Number(s?.portionGrams)) && Number(s?.portionGrams) > 0
+                ? Math.round(Number(s?.portionGrams))
+                : undefined,
         }))
         .filter((s) => Number.isFinite(s.calories) && s.calories >= 0)
         .map((s) => ({ ...s, calories: Math.round(s.calories) }));
