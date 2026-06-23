@@ -6,11 +6,10 @@ import {
     Modal,
     Pressable,
     Animated,
-    ScrollView
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
 import { FoodEntry, MealType, MEAL_CONFIGS } from '../types';
 
 interface FoodMenuProps {
@@ -32,9 +31,9 @@ export function FoodMenu({
     onDelete,
     onToggleFavorite,
     onMoveTo,
-    onClose
+    onClose,
 }: FoodMenuProps) {
-    const slideAnim = React.useRef(new Animated.Value(300)).current;
+    const slideAnim = React.useRef(new Animated.Value(400)).current;
     const backdropAnim = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
@@ -42,27 +41,27 @@ export function FoodMenu({
             Animated.parallel([
                 Animated.spring(slideAnim, {
                     toValue: 0,
-                    damping: 25,
-                    stiffness: 400,
+                    damping: 26,
+                    stiffness: 320,
                     useNativeDriver: true,
                 }),
                 Animated.timing(backdropAnim, {
                     toValue: 1,
-                    duration: 250,
+                    duration: 220,
                     useNativeDriver: true,
                 }),
             ]).start();
         } else {
             Animated.parallel([
                 Animated.spring(slideAnim, {
-                    toValue: 300,
-                    damping: 25,
-                    stiffness: 400,
+                    toValue: 400,
+                    damping: 26,
+                    stiffness: 320,
                     useNativeDriver: true,
                 }),
                 Animated.timing(backdropAnim, {
                     toValue: 0,
-                    duration: 200,
+                    duration: 180,
                     useNativeDriver: true,
                 }),
             ]).start();
@@ -72,97 +71,104 @@ export function FoodMenu({
     if (!entry) return null;
 
     const handleMoveTo = (mealType: MealType) => {
-        // Immediate feedback
         Haptics.selectionAsync();
-
-        // Close menu immediately
         onClose();
-
-        // Perform expensive operation after menu closes
-        requestAnimationFrame(() => {
-            onMoveTo(mealType);
-        });
+        requestAnimationFrame(() => onMoveTo(mealType));
     };
 
     return (
-        <Modal
-            transparent
-            visible={visible}
-            onRequestClose={onClose}
-            animationType="none"
-        >
-            <Pressable
-                style={styles.backdrop}
-                onPress={onClose}
-            >
-                <Animated.View
-                    style={[
-                        styles.backdropOverlay,
-                        { opacity: backdropAnim }
-                    ]}
-                />
+        <Modal transparent visible={visible} onRequestClose={onClose} animationType="none">
+            <Pressable style={styles.backdrop} onPress={onClose}>
+                <Animated.View style={[styles.backdropOverlay, { opacity: backdropAnim }]} />
             </Pressable>
 
-            <Animated.View
-                style={[
-                    styles.menuContainer,
-                    { transform: [{ translateY: slideAnim }] }
-                ]}
-            >
-                <ScrollView style={styles.menu} bounces={false}>
-                    <Text style={styles.menuTitle} numberOfLines={1}>{entry.name}</Text>
-                    <View style={styles.divider} />
+            <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]}>
+                <View style={styles.grabber} />
+                <Text style={styles.title} numberOfLines={1}>{entry.name}</Text>
 
-                    <Pressable style={styles.menuItem} onPress={onEdit}>
-                        <Text style={styles.menuItemText}>Editar</Text>
+                {/* Primary actions */}
+                <View style={styles.group}>
+                    <Pressable
+                        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                        onPress={onEdit}
+                        accessibilityRole="button"
+                        accessibilityLabel="Editar"
+                    >
+                        <Ionicons name="create-outline" size={20} color={colors.textSecondary} style={styles.leading} />
+                        <Text style={styles.rowText}>Editar</Text>
                     </Pressable>
-
-                    <Pressable style={styles.menuItem} onPress={onToggleFavorite}>
-                        <Text style={styles.menuItemText}>
+                    <View style={styles.hairline} />
+                    <Pressable
+                        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                        onPress={onToggleFavorite}
+                        accessibilityRole="button"
+                        accessibilityLabel={entry.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                    >
+                        <Ionicons
+                            name={entry.isFavorite ? 'heart' : 'heart-outline'}
+                            size={20}
+                            color={entry.isFavorite ? colors.accent : colors.textSecondary}
+                            style={styles.leading}
+                        />
+                        <Text style={styles.rowText}>
                             {entry.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                         </Text>
                     </Pressable>
+                </View>
 
-                    <View style={styles.sectionDivider}>
-                        <Text style={styles.sectionLabel}>Mover a</Text>
-                    </View>
-
-                    {MEAL_TYPES.map((mealType) => {
+                {/* Move to */}
+                <Text style={styles.sectionLabel}>MOVER A</Text>
+                <View style={styles.group}>
+                    {MEAL_TYPES.map((mealType, i) => {
                         const config = MEAL_CONFIGS[mealType];
                         const isCurrent = entry.mealType === mealType;
                         return (
-                            <Pressable
-                                key={mealType}
-                                style={({ pressed }) => [
-                                    styles.menuItem,
-                                    pressed && { backgroundColor: 'rgba(255,255,255,0.1)' }
-                                ]}
-                                onPress={() => handleMoveTo(mealType)}
-                                disabled={isCurrent}
-                            >
-                                <Text style={[
-                                    styles.menuItemText,
-                                    isCurrent && styles.currentMealText
-                                ]}>
-                                    {config.icon} {config.label}
-                                    {isCurrent && ' ✓'}
-                                </Text>
-                            </Pressable>
+                            <React.Fragment key={mealType}>
+                                {i > 0 && <View style={styles.hairline} />}
+                                <Pressable
+                                    style={({ pressed }) => [styles.row, pressed && !isCurrent && styles.rowPressed]}
+                                    onPress={() => handleMoveTo(mealType)}
+                                    disabled={isCurrent}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Mover a ${config.label}`}
+                                >
+                                    <View style={styles.leading}>
+                                        <View style={[styles.dot, { backgroundColor: config.color }]} />
+                                    </View>
+                                    <Text style={[styles.rowText, isCurrent && styles.rowTextMuted]}>
+                                        {config.label}
+                                    </Text>
+                                    {isCurrent && (
+                                        <Ionicons name="checkmark" size={18} color={colors.accent} />
+                                    )}
+                                </Pressable>
+                            </React.Fragment>
                         );
                     })}
+                </View>
 
-                    <View style={styles.spacer} />
-
-                    <Pressable style={styles.menuItem} onPress={onDelete}>
-                        <Text style={[styles.menuItemText, styles.deleteText]}>Eliminar</Text>
+                {/* Delete */}
+                <View style={styles.group}>
+                    <Pressable
+                        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                        onPress={onDelete}
+                        accessibilityRole="button"
+                        accessibilityLabel="Eliminar"
+                    >
+                        <Ionicons name="trash-outline" size={20} color={colors.error} style={styles.leading} />
+                        <Text style={[styles.rowText, styles.deleteText]}>Eliminar</Text>
                     </Pressable>
+                </View>
 
-                    <View style={styles.spacer} />
-
-                    <Pressable style={styles.menuItem} onPress={onClose}>
-                        <Text style={[styles.menuItemText, styles.cancelText]}>Cancelar</Text>
-                    </Pressable>
-                </ScrollView>
+                {/* Cancel */}
+                <Pressable
+                    style={({ pressed }) => [styles.cancelBtn, pressed && styles.rowPressed]}
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancelar"
+                >
+                    <Text style={styles.cancelText}>Cancelar</Text>
+                </Pressable>
             </Animated.View>
         </Modal>
     );
@@ -171,70 +177,97 @@ export function FoodMenu({
 const styles = StyleSheet.create({
     backdrop: {
         flex: 1,
-        justifyContent: 'flex-end',
     },
     backdropOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'rgba(20, 24, 22, 0.45)',
     },
-    menuContainer: {
+    container: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        maxHeight: '70%',
-        paddingBottom: 34,
+        paddingHorizontal: 12,
+        paddingBottom: 36,
     },
-    menu: {
-        backgroundColor: colors.cardBackground,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
-        boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.1)',
-        elevation: 16,
+    grabber: {
+        alignSelf: 'center',
+        width: 38,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: colors.ghostBorderHover,
+        marginBottom: 12,
     },
-    menuTitle: {
-        ...typography.foodName,
+    title: {
         textAlign: 'center',
-        paddingVertical: 12,
-        color: colors.textSecondary,
+        fontSize: 13,
+        color: colors.textMuted,
+        marginBottom: 14,
+        paddingHorizontal: 16,
     },
-    divider: {
-        height: 1,
-        backgroundColor: colors.cardBorder,
-        marginBottom: 8,
+    group: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        overflow: 'hidden',
+        marginBottom: 10,
     },
-    menuItem: {
-        paddingVertical: 16,
+    row: {
+        flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: 15,
+        paddingHorizontal: 16,
     },
-    menuItemText: {
-        fontSize: 17,
-        fontWeight: '400',
+    rowPressed: {
+        backgroundColor: colors.accentSubtle,
+    },
+    leading: {
+        width: 22,
+        alignItems: 'center',
+        marginRight: 14,
+    },
+    rowText: {
+        flex: 1,
+        fontSize: 16,
         color: colors.textPrimary,
+        fontWeight: '400',
+    },
+    rowTextMuted: {
+        color: colors.textMuted,
     },
     deleteText: {
         color: colors.error,
     },
-    cancelText: {
-        fontWeight: '400',
+    dot: {
+        width: 11,
+        height: 11,
+        borderRadius: 6,
     },
-    sectionDivider: {
-        paddingVertical: 12,
-        alignItems: 'center',
+    hairline: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: colors.cardBorder,
+        marginLeft: 52,
     },
     sectionLabel: {
-        fontSize: 13,
+        fontSize: 11,
         color: colors.textMuted,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        letterSpacing: 0.8,
+        marginLeft: 16,
+        marginBottom: 8,
     },
-    currentMealText: {
-        color: colors.accent,
+    cancelBtn: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        paddingVertical: 16,
+        alignItems: 'center',
+        marginTop: 2,
     },
-    spacer: {
-        height: 8,
-        backgroundColor: colors.cardBorder,
-        marginVertical: 8,
+    cancelText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: colors.textPrimary,
     },
 });
