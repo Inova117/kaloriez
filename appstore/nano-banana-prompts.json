@@ -1,0 +1,80 @@
+{
+  "project": "Kaloriez — App Store screenshots (Nano Banana / Gemini 2.5 Flash Image)",
+  "how_to_use": [
+    "Genera UNA imagen por objeto de 'images', pegando su campo 'prompt'.",
+    "Para máxima fidelidad de la UI, adjunta como imagen de referencia una captura real de la app (o la tarjeta del día de la landing) y di: 'usa esta pantalla como referencia del estilo de UI'.",
+    "Nano Banana rinde bien el texto, pero revísalo: si alguna palabra sale mal, regenera o retócala en Figma/Canva.",
+    "Mantén la consistencia reusando el bloque 'brand_style' en cada generación."
+  ],
+  "format": {
+    "orientation": "vertical (portrait)",
+    "target_size_px": "1290 x 2796 (iPhone 6.7\") o 1320 x 2868 (6.9\")",
+    "generation_ratio": "9:16 portrait — deja margen crema arriba y abajo y, si hace falta, rellena el lienzo a 1290x2796 en un editor",
+    "layout": "titular en el ~22% superior; teléfono/mockup en el ~78% inferior; mucho aire"
+  },
+  "brand_style": {
+    "mood": "minimalismo cálido, premium, editorial, sereno — 'tactile sanctuary', como un diario de papel personal",
+    "palette": {
+      "background": "#FAF8F5 crema cálido (NUNCA blanco puro)",
+      "surface_paper": "#F5F3EF",
+      "surface_linen": "#EFEBE6",
+      "accent_sage": "#7B896F (acento ÚNICO, con cuentagotas)",
+      "accent_deep": "#4C5647",
+      "ink": "#2C3E35 (texto, verde-carbón)",
+      "muted": "#5E6A5D",
+      "meal_dots": { "desayuno": "#B8A88A", "comida": "#8FA882", "cena": "#7B896F", "snacks": "#A8C5A0" }
+    },
+    "typography": {
+      "headline": "serif con carácter, ligera, tracking apretado (estilo Fraunces)",
+      "ui_body_numbers": "grotesca humanista cálida (estilo Hanken Grotesk), numerales tabulares en las cifras"
+    },
+    "device": "iPhone moderno realista, biseles finos y uniformes, esquinas redondeadas, sin logos de marca, sutil reflejo en pantalla, sombra larga y suave debajo",
+    "lighting": "luz natural, suave y difusa",
+    "do": ["mucho espacio en blanco", "un solo acento salvia", "texto nítido y legible", "comida mexicana real", "pesos ligeros"],
+    "avoid": ["degradados morados o azules", "neón", "look Inter/Roboto", "sombras pesadas", "saturación de elementos", "personas de banco de imágenes", "blanco puro #fff", "logo de Apple falso", "manzana roja brillante (usar marca salvia)"]
+  },
+  "images": [
+    {
+      "n": 1,
+      "filename": "01-dia-de-un-vistazo.png",
+      "headline": "Tu día entero, de un vistazo",
+      "subhead": "Sin menús que se cierran",
+      "prompt": "Captura de App Store vertical (retrato 9:16, pensada para 1290x2796) para la app de iOS 'Kaloriez'. Estilo minimalista cálido y premium, tipo diario de papel. Fondo completo en crema cálido #FAF8F5 (nunca blanco puro), mucho espacio negativo, luz natural suave. ARRIBA (~22%): un titular en serif ligera con carácter (estilo Fraunces), color verde-carbón #2C3E35, grande, en dos líneas, que dice exactamente: 'Tu día entero,' / 'de un vistazo.' Debajo, una línea pequeña en sans humanista, color salvia apagado #5E6A5D: 'Sin menús que se cierran.' Sentence case, ortografía perfecta en español. ABAJO (~78%): un iPhone moderno realista (biseles finos, esquinas redondeadas, sin logos), flotando con sombra larga y suave. La pantalla muestra la vista 'hoy' de Kaloriez sobre fondo crema #FAF8F5: arriba una fecha pequeña 'dom · 22 jun'; al centro un anillo de progreso circular en verde salvia #7B896F al ~60%, trazo redondeado, con numerales ligeros tabulares al centro que dicen '1,240' y debajo 'de 2,000 kcal'; debajo cuatro secciones de comida, cada una con una etiqueta en VERSALITAS y un punto de color — 'DESAYUNO', 'COMIDA', 'CENA', 'SNACKS' — listando alimentos en tarjetas redondeadas color lino #EFEBE6 con el nombre a la izquierda y las kcal a la derecha: 'Chilaquiles verdes 320 kcal', 'Taco al pastor 360 kcal', 'Pozole rojo 180 kcal', 'Mango con chile 90 kcal'. Aireado, pesos ligeros, un solo acento salvia. Nada de morados, neón, sombras pesadas, saturación ni logo de Apple. Nítido, legible, calidad App Store."
+    },
+    {
+      "n": 2,
+      "filename": "02-registra-en-segundos.png",
+      "headline": "Anótalo como hablas",
+      "subhead": "Listo en segundos, no en una sesión",
+      "prompt": "Captura de App Store vertical (retrato 9:16, para 1290x2796) para la app 'Kaloriez'. Mismo estilo minimalista cálido: fondo crema #FAF8F5, mucho aire, luz suave. ARRIBA (~22%): titular en serif ligera con carácter (Fraunces), verde-carbón #2C3E35, dos líneas: 'Anótalo' / 'como hablas.' Debajo, línea pequeña en sans humanista salvia apagado #5E6A5D: 'Listo en segundos, no en una sesión.' ABAJO (~78%): iPhone realista (sin logos), sombra suave. La pantalla muestra el registro rápido de Kaloriez sobre crema: una barra de entrada de texto color papel #F5F3EF redondeada con un ícono de micrófono salvia a la izquierda y el texto escrito 'taco al pastor' con un cursor; justo debajo, apareciendo, una tarjeta de resultado en lino #EFEBE6 redondeada que dice a la izquierda 'Taco al pastor · 1 pza' y a la derecha una pequeña etiqueta 'est.' y '180 kcal' en numerales tabulares. Sensación de inmediatez y limpieza. Un solo acento salvia. Sin morados, neón, sombras pesadas ni logos. Nítido y legible, calidad App Store."
+    },
+    {
+      "n": 3,
+      "filename": "03-comida-mexicana.png",
+      "headline": "Entiende la comida mexicana",
+      "subhead": "Tacos, pozole, chilaquiles… sin pelear con la app",
+      "prompt": "Captura de App Store vertical (retrato 9:16, para 1290x2796) para la app 'Kaloriez'. Estilo minimalista cálido: fondo crema #FAF8F5, mucho espacio negativo, luz natural suave. ARRIBA (~22%): titular en serif ligera (Fraunces), verde-carbón #2C3E35, dos líneas: 'Entiende la' / 'comida mexicana.' Debajo, línea pequeña en sans humanista salvia #5E6A5D: 'Tacos, pozole, chilaquiles… sin pelear con la app.' ABAJO (~78%): iPhone realista (sin logos), sombra larga suave. La pantalla muestra una lista de resultados de comida mexicana en Kaloriez sobre crema: varias tarjetas redondeadas color lino #EFEBE6, cada una con el nombre de un platillo mexicano a la izquierda y kcal a la derecha en numerales tabulares: 'Chilaquiles verdes con huevo 320 kcal', 'Pozole rojo 450 kcal', 'Tamal de rajas 250 kcal', 'Agua de jamaica 80 kcal', 'Enchiladas verdes 380 kcal'; algunas con una pequeña palomita verde salvia de 'verificado'. Cálido, ordenado, apetecible pero minimalista (sin fotos de comida, solo la UI). Un solo acento salvia. Sin morados, neón ni logos. Nítido, calidad App Store."
+    },
+    {
+      "n": 4,
+      "filename": "04-dictalo-con-voz.png",
+      "headline": "O díctalo. Sin escribir",
+      "subhead": "Habla y Kaloriez lo registra",
+      "prompt": "Captura de App Store vertical (retrato 9:16, para 1290x2796) para la app 'Kaloriez'. Estilo minimalista cálido: fondo crema #FAF8F5, mucho aire, luz suave. ARRIBA (~22%): titular en serif ligera (Fraunces), verde-carbón #2C3E35, dos líneas: 'O díctalo.' / 'Sin escribir.' Debajo, línea pequeña en sans humanista salvia #5E6A5D: 'Habla y Kaloriez lo registra.' ABAJO (~78%): iPhone realista (sin logos), sombra suave. La pantalla muestra el modo de dictado por voz de Kaloriez sobre crema: al centro un botón circular grande de micrófono en verde salvia #7B896F con un halo suave, y encima unas ondas de audio sutiles en salvia; debajo, en sans ligera verde-carbón, el texto transcribiéndose: '“dos huevos con frijoles y un café”'; más abajo una etiqueta pequeña salvia apagado: 'Escuchando…'. Calmado, premium, un solo acento salvia. Sin morados, neón, sombras pesadas ni logos. Nítido, calidad App Store."
+    },
+    {
+      "n": 5,
+      "filename": "05-progreso-semanal.png",
+      "headline": "Mira tu semana, clarísima",
+      "subhead": "Tu progreso, sin gráficas que abruman",
+      "prompt": "Captura de App Store vertical (retrato 9:16, para 1290x2796) para la app 'Kaloriez'. Estilo minimalista cálido: fondo crema #FAF8F5, mucho espacio negativo, luz natural suave. ARRIBA (~22%): titular en serif ligera (Fraunces), verde-carbón #2C3E35, dos líneas: 'Mira tu semana,' / 'clarísima.' Debajo, línea pequeña en sans humanista salvia #5E6A5D: 'Tu progreso, sin gráficas que abruman.' ABAJO (~78%): iPhone realista (sin logos), sombra larga suave. La pantalla muestra la vista de progreso de Kaloriez sobre crema: un encabezado pequeño 'Esta semana'; una gráfica de barras semanal limpia y minimalista con siete barras redondeadas en verde salvia #7B896F (alturas variadas) y etiquetas de días debajo 'L M M J V S D'; arriba una cifra grande en numerales ligeros tabulares: 'Promedio 1,840 kcal'. Mucho aire, sin saturación de datos, un solo acento salvia. Sin morados, neón, sombras pesadas ni logos. Nítido y legible, calidad App Store."
+    },
+    {
+      "n": 6,
+      "filename": "06-cierre-marca.png",
+      "headline": "Simple. Rápida. Hecha en México",
+      "subhead": "Kaloriez",
+      "prompt": "Cierre de marca para App Store, vertical (retrato 9:16, para 1290x2796) de la app 'Kaloriez'. Composición centrada, mínima, premium, mucho espacio en blanco. Fondo completo en crema cálido #FAF8F5, luz natural muy suave, ligera textura de papel apenas perceptible. Al centro-arriba, una marca tipográfica: la palabra 'Kaloriez' en serif ligera con carácter (estilo Fraunces), verde-carbón #2C3E35, grande, y a su izquierda un pequeño ícono de anillo circular abierto trazado en verde salvia #7B896F (como un anillo de progreso), trazo redondeado. Debajo, un tagline en sans humanista ligera verde-carbón: 'Simple. Rápida. Hecha en México.' Más abajo, opcionalmente, una línea muy pequeña en salvia apagado #5E6A5D: 'Conteo de calorías, sin complicarte.' Elegante, sereno, un solo acento salvia, cero ilustraciones extra. Sin morados, neón, manzana roja ni logo de Apple. Nítido, editorial, calidad App Store."
+    }
+  ]
+}
