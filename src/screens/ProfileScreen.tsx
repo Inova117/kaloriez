@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, Linking, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,48 +7,36 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
 import { colors } from '../theme/colors';
+import { OnboardingScreen } from './OnboardingScreen';
 
 interface ProfileScreenProps {
     onClose: () => void;
 }
 
-const GOAL_STORAGE_KEY = '@weekly_weight_goal';
+const DAILY_GOAL_KEY = '@daily_goal';
 // TODO: replace with your hosted privacy policy URL before store submission.
 const PRIVACY_POLICY_URL = 'https://kaloriez.app/privacy';
 
 export function ProfileScreen({ onClose }: ProfileScreenProps) {
     const { user, signOut, deleteAccount } = useAuth();
-    const [weeklyGoal, setWeeklyGoal] = useState('0.5');
-    const [isEditingGoal, setIsEditingGoal] = useState(false);
-    const [tempGoal, setTempGoal] = useState('0.5');
+    const [dailyGoal, setDailyGoal] = useState<number | null>(null);
+    const [editorVisible, setEditorVisible] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
     useEffect(() => {
-        loadWeeklyGoal();
+        loadDailyGoal();
     }, []);
 
-    const loadWeeklyGoal = async () => {
+    const loadDailyGoal = async () => {
         try {
-            const saved = await AsyncStorage.getItem(GOAL_STORAGE_KEY);
-            if (saved) {
-                setWeeklyGoal(saved);
-                setTempGoal(saved);
-            }
+            const saved = await AsyncStorage.getItem(DAILY_GOAL_KEY);
+            const n = saved ? parseInt(saved, 10) : NaN;
+            setDailyGoal(Number.isFinite(n) && n > 0 ? n : null);
         } catch (error) {
-            logger.error('Error loading weekly goal', error);
-        }
-    };
-
-    const saveWeeklyGoal = async () => {
-        try {
-            await AsyncStorage.setItem(GOAL_STORAGE_KEY, tempGoal);
-            setWeeklyGoal(tempGoal);
-            setIsEditingGoal(false);
-        } catch (error) {
-            logger.error('Error saving weekly goal', error);
+            logger.error('Error loading daily goal', error);
         }
     };
 
@@ -218,56 +206,25 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
                 {/* Goals Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>METAS</Text>
+                    <Text style={styles.sectionTitle}>META</Text>
 
                     <Pressable
                         style={styles.card}
-                        onPress={() => setIsEditingGoal(!isEditingGoal)}
+                        onPress={() => setEditorVisible(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Editar perfil y meta diaria"
                     >
                         <View style={styles.row}>
-                            <Text style={styles.label}>Meta de peso semanal</Text>
+                            <Text style={styles.label}>Perfil y meta diaria</Text>
                             <View style={styles.goalValue}>
-                                <Text style={styles.value}>{weeklyGoal} kg/semana</Text>
-                                <Ionicons 
-                                    name={isEditingGoal ? "chevron-up" : "chevron-forward"} 
-                                    size={20} 
-                                    color={colors.textMuted} 
-                                />
+                                <Text style={styles.value}>
+                                    {dailyGoal ? `${dailyGoal} kcal` : 'Configurar'}
+                                </Text>
+                                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                             </View>
                         </View>
                     </Pressable>
-
-                    {isEditingGoal && (
-                        <View style={styles.goalForm}>
-                            <Text style={styles.formLabel}>Elige tu meta de pérdida de peso semanal</Text>
-                            {['0.25', '0.5', '0.75', '1.0'].map((goal) => (
-                                <Pressable
-                                    key={goal}
-                                    style={[
-                                        styles.goalOption,
-                                        tempGoal === goal && styles.goalOptionSelected
-                                    ]}
-                                    onPress={() => setTempGoal(goal)}
-                                >
-                                    <Text style={[
-                                        styles.goalOptionText,
-                                        tempGoal === goal && styles.goalOptionTextSelected
-                                    ]}>
-                                        {goal} kg / semana
-                                    </Text>
-                                    {tempGoal === goal && (
-                                        <Ionicons name="checkmark" size={20} color={colors.accent} />
-                                    )}
-                                </Pressable>
-                            ))}
-                            <Pressable 
-                                style={styles.saveButton}
-                                onPress={saveWeeklyGoal}
-                            >
-                                <Text style={styles.saveButtonText}>Guardar meta</Text>
-                            </Pressable>
-                        </View>
-                    )}
+                    <Text style={styles.goalHint}>Actualiza tu peso, actividad u objetivo para recalcular tu meta.</Text>
                 </View>
 
                 {/* About */}
@@ -304,6 +261,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            <Modal visible={editorVisible} animationType="slide" presentationStyle="pageSheet">
+                <OnboardingScreen
+                    isEditing
+                    onComplete={() => { setEditorVisible(false); loadDailyGoal(); }}
+                />
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -373,6 +337,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+    },
+    goalHint: {
+        fontSize: 13,
+        color: colors.textMuted,
+        marginTop: 2,
+        paddingHorizontal: 4,
     },
     passwordForm: {
         backgroundColor: colors.cardBackground,

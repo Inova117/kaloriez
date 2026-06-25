@@ -148,8 +148,10 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
         step === 1 ? (weightValid && heightValid) :
         true;
 
+    // When editing the profile we stop at the result (no first-run paywall).
+    const lastStep = isEditing ? 4 : 5;
     const goNext = () => {
-        if (step < 5) {
+        if (step < lastStep) {
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setStep(step + 1);
         }
@@ -173,8 +175,11 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
         }
     };
 
-    const primaryLabel = step < 3 ? 'Siguiente' : step === 3 ? 'Ver mi meta' : 'Continuar';
-    const primaryAction = goNext;
+    const primaryLabel = step < 3 ? 'Siguiente'
+        : step === 3 ? 'Ver mi meta'
+        : isEditing ? 'Guardar'
+        : 'Continuar';
+    const primaryAction = (step === 4 && isEditing) ? handleFinish : goNext;
     const primaryDisabled = !canAdvance;
 
     const paceOptions = direction === 'lose' ? LOSE_PACE : GAIN_PACE;
@@ -184,6 +189,17 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
             <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 {/* Progress */}
                 <View style={styles.topBar}>
+                    {isEditing && (
+                        <Pressable
+                            style={styles.closeX}
+                            onPress={onComplete}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Cerrar"
+                        >
+                            <Ionicons name="close" size={24} color={colors.textMuted} />
+                        </Pressable>
+                    )}
                     {step < 4 ? <ProgressDots total={TOTAL_INPUT_STEPS} index={step} /> : <View style={{ height: 6 }} />}
                 </View>
 
@@ -389,7 +405,8 @@ function BreakdownRow({ label, value, signed }: { label: string; value: number; 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
-    topBar: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+    topBar: { paddingTop: 12, paddingBottom: 8, alignItems: 'center', justifyContent: 'center' },
+    closeX: { position: 'absolute', left: 16, top: 8, zIndex: 10, padding: 4 },
     track: { flexDirection: 'row', flex: 1 },
     panel: { flex: 1, paddingHorizontal: 28, paddingTop: 24, justifyContent: 'flex-start' },
     title: { fontSize: 28, fontWeight: '300', color: colors.textPrimary, letterSpacing: -0.5 },
