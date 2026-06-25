@@ -37,16 +37,35 @@ function jsonResponse(body: unknown, status = 200): Response {
     });
 }
 
-async function getUser(req: Request): Promise<{ id: string } | null> {
+type DbClient = ReturnType<typeof createClient>;
+
+async function getUser(req: Request): Promise<{ id: string; client: DbClient } | null> {
     const authHeader = req.headers.get("Authorization") ?? "";
-    const supabase = createClient(
+    const client = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
         { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await client.auth.getUser();
     if (error || !user) return null;
-    return { id: user.id };
+    return { id: user.id, client };
+}
+
+// Per-user cost guardrail: atomically counts this call against the user's
+// per-minute and per-day budget in Postgres (consume_ai_quota, see
+// supabase/rate_limit.sql). Fail-closed — if the limiter is unreachable we skip
+// the paid AI call rather than risk runaway spend.
+// NOTE: apply supabase/rate_limit.sql BEFORE deploying this function.
+async function withinQuota(client: DbClient, perMinute: number, perDay: number): Promise<boolean> {
+    const { data, error } = await client.rpc("consume_ai_quota", {
+        p_per_minute: perMinute,
+        p_per_day: perDay,
+    });
+    if (error) {
+        console.error("consume_ai_quota failed", error.message);
+        return false;
+    }
+    return data === true;
 }
 
 function toSafeCalories(value: unknown): number | null {
@@ -162,6 +181,13 @@ Deno.serve(async (req: Request) => {
     try {
         const user = await getUser(req);
         if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+
+        // Audio is pricier (multimodal tokens), so a tighter budget: 3/min,
+        // 30/day per user. Check before parsing the (up to ~3MB) body. On limit
+        // we return 200 + empty list so the client degrades gracefully.
+        if (!(await withinQuota(user.client, 3, 30))) {
+            return jsonResponse({ suggestions: [], error: "rate_limited" });
+        }
 
         const { audio, mimeType } = await req.json().catch(() => ({ audio: "", mimeType: "" }));
         if (!audio || typeof audio !== "string") {

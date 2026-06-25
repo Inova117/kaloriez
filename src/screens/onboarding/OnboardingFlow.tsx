@@ -25,6 +25,8 @@ import {
 import {
     ProgressDots, SegmentedControl, BigNumberInput, OptionRow, PaceChips, LiveEstimate,
 } from '../../components/onboarding/OnboardingControls';
+import { PremiumPanel, PremiumPlan } from '../../components/onboarding/PremiumPanel';
+import { notify } from '../../utils/notify';
 
 export const HAS_COMPLETED_ONBOARDING_KEY = '@has_completed_onboarding';
 export const USER_PROFILE_KEY = '@user_profile';
@@ -147,7 +149,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
         true;
 
     const goNext = () => {
-        if (step < TOTAL_INPUT_STEPS) {
+        if (step < 5) {
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setStep(step + 1);
         }
@@ -171,9 +173,9 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
         }
     };
 
-    const primaryLabel = step < 3 ? 'Siguiente' : step === 3 ? 'Ver mi meta' : 'Empezar';
-    const primaryAction = step < 4 ? goNext : handleFinish;
-    const primaryDisabled = step < 4 && !canAdvance;
+    const primaryLabel = step < 3 ? 'Siguiente' : step === 3 ? 'Ver mi meta' : 'Continuar';
+    const primaryAction = goNext;
+    const primaryDisabled = !canAdvance;
 
     const paceOptions = direction === 'lose' ? LOSE_PACE : GAIN_PACE;
 
@@ -187,7 +189,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
 
                 {/* Sliding panels */}
                 <View style={styles.flex}>
-                    <Animated.View style={[styles.track, { width: width * 5, transform: [{ translateX }] }]}>
+                    <Animated.View style={[styles.track, { width: width * 6, transform: [{ translateX }] }]}>
                         {/* Step 0 — Gender + Age */}
                         <Panel width={width}>
                             <Text style={styles.title}>Hablemos de ti</Text>
@@ -328,10 +330,25 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                                 )}
                             </ScrollView>
                         </Panel>
+
+                        {/* Step 5 — Premium (gentle, transparent paywall) */}
+                        <Panel width={width}>
+                            <PremiumPanel
+                                onChoosePlan={(plan: PremiumPlan) => {
+                                    notify(
+                                        'Muy pronto 💚',
+                                        'Estamos terminando de activar los pagos. Por ahora entras con todo desbloqueado.'
+                                    );
+                                    handleFinish();
+                                }}
+                                onSkip={handleFinish}
+                            />
+                        </Panel>
                     </Animated.View>
                 </View>
 
-                {/* Footer */}
+                {/* Footer (hidden on the premium step, which has its own CTAs) */}
+                {step < 5 && (
                 <View style={styles.footer}>
                     {step > 0 ? (
                         <Pressable onPress={goBack} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Atrás">
@@ -349,6 +366,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                         <Text style={styles.primaryText}>{primaryLabel}</Text>
                     </Pressable>
                 </View>
+                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
