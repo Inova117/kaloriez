@@ -2,6 +2,11 @@ import {
     calculateBMR,
     calculateTDEE,
     calculateDailyCalorieGoal,
+    getCalorieAdjustment,
+    getKgPerWeek,
+    paceToWeightGoal,
+    calculateGoalBreakdown,
+    isGoalClampedBySafetyFloor,
     UserProfile,
 } from '../nutritionCalculator';
 
@@ -61,5 +66,45 @@ describe('calculateDailyCalorieGoal', () => {
             weightGoal: 'lose_1_00',
         };
         expect(calculateDailyCalorieGoal(tiny)).toBe(1500);
+    });
+});
+
+describe('onboarding helpers', () => {
+    it('getCalorieAdjustment maps goals to daily deltas', () => {
+        expect(getCalorieAdjustment('lose_0_50')).toBe(-550);
+        expect(getCalorieAdjustment('maintain')).toBe(0);
+        expect(getCalorieAdjustment('gain_0_25')).toBe(275);
+    });
+
+    it('getKgPerWeek is signed and proportional', () => {
+        expect(getKgPerWeek('lose_0_50')).toBeCloseTo(-0.5);
+        expect(getKgPerWeek('gain_0_50')).toBeCloseTo(0.5);
+        expect(getKgPerWeek('maintain')).toBe(0);
+    });
+
+    it('paceToWeightGoal maps direction + index (clamped)', () => {
+        expect(paceToWeightGoal('lose', 1)).toBe('lose_0_50');
+        expect(paceToWeightGoal('maintain', 0)).toBe('maintain');
+        expect(paceToWeightGoal('gain', 1)).toBe('gain_0_50');
+        expect(paceToWeightGoal('lose', 99)).toBe('lose_1_00'); // clamped
+    });
+
+    it('calculateGoalBreakdown is consistent with the goal', () => {
+        const b = calculateGoalBreakdown({
+            gender: 'male', age: 30, weight: 80, height: 180,
+            activityLevel: 'sedentary', weightGoal: 'lose_0_50',
+        });
+        expect(b.bmr).toBe(1780);
+        expect(b.tdee).toBe(2136);
+        expect(b.goal).toBe(1586);
+        expect(b.effectiveAdjustment).toBe(-550);
+        expect(b.floored).toBe(false);
+    });
+
+    it('flags the safety floor when the goal is clamped', () => {
+        expect(isGoalClampedBySafetyFloor({
+            gender: 'female', age: 25, weight: 40, height: 150,
+            activityLevel: 'sedentary', weightGoal: 'lose_1_00',
+        })).toBe(true);
     });
 });

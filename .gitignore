@@ -52,3 +52,4 @@ ios/*.xcworkspace/xcuserdata/
 
 .env.local
 *.apk
+*.zip
