@@ -9,6 +9,7 @@ import {
     Platform,
     ActivityIndicator,
     ScrollView,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { notify } from '../utils/notify';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { logger } from '../utils/logger';
+import { TERMS_URL, PRIVACY_POLICY_URL } from '../lib/legal';
 
 // hCaptcha public site key. When unset/empty the entire CAPTCHA layer is a
 // no-op: no widget renders and no token is sent, so signUp/signIn behave
@@ -267,6 +269,15 @@ export function AuthScreen() {
                             )}
                         </Pressable>
 
+                        {!isLogin && !forgotMode && (
+                            <Text style={styles.consentText}>
+                                Al crear tu cuenta aceptas los{' '}
+                                <Text style={styles.consentLink} onPress={() => Linking.openURL(TERMS_URL)}>Términos</Text>
+                                {' '}y el{' '}
+                                <Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>Aviso de Privacidad</Text>.
+                            </Text>
+                        )}
+
                         {isLogin && !forgotMode && (
                             <Pressable
                                 style={styles.forgotButton}
@@ -421,5 +432,17 @@ const styles = StyleSheet.create({
     forgotText: {
         fontSize: 14,
         color: colors.accent,
+    },
+    consentText: {
+        fontSize: 13,
+        color: colors.textMuted,
+        textAlign: 'center',
+        marginTop: 14,
+        lineHeight: 18,
+        paddingHorizontal: 8,
+    },
+    consentLink: {
+        color: colors.accent,
+        textDecorationLine: 'underline',
     },
 });
