@@ -18,6 +18,10 @@ export interface FoodEntry {
     mealType: MealType;
     source?: CalorieSource;
     portionGrams?: number; // assumed/edited portion weight; links grams <-> calories
+    // Number of units the entry represents (e.g. 2 for "2 tacos"), parsed from
+    // the input and persisted (food_entries.unit_count). Lets the food-memory
+    // derive a per-unit calorie value when the entry is edited or reloaded.
+    unitCount?: number;
 }
 
 export interface QuickAddItem {

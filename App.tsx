@@ -6,11 +6,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MainApp } from './src/screens/MainApp';
 import { OnboardingScreen, HAS_COMPLETED_ONBOARDING_KEY } from './src/screens/OnboardingScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
+import { ResetPasswordScreen } from './src/screens/ResetPasswordScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { PremiumProvider } from './src/contexts/PremiumContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 import { migrateLocalDataToSupabase } from './src/services/dataMigration';
 import { flushQueue } from './src/services/syncQueue';
 import { subscribeConnectivity } from './src/services/connectivity';
-import { supabase } from './src/lib/supabase';
+import { USER_PROFILE_KEY } from './src/screens/onboarding/OnboardingFlow';
 import { colors } from './src/theme/colors';
 import { logger } from './src/utils/logger';
 import * as Sentry from '@sentry/react-native';
@@ -32,12 +35,21 @@ Sentry.init({
     ? []
     : [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
 
+  // Health app: sendDefaultPii:false only suppresses Sentry's AUTOMATIC PII, not
+  // custom paths. Strip identity/request vectors before any event leaves the
+  // device so diet/account data can never ride along in an error report.
+  beforeSend(event) {
+    delete event.user;
+    delete event.request;
+    return event;
+  },
+
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
 });
 
 function AppContent() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, passwordRecovery } = useAuth();
   const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
 
   // Depend on user?.id (a stable string) rather than the user object, so routine
@@ -64,26 +76,15 @@ function AppContent() {
 
   const checkOnboardingStatus = async () => {
     try {
-      // First check if user has a profile in Supabase
-      if (user) {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('daily_calorie_goal')
-          .eq('id', user.id)
-          .single();
-
-        if (profile && profile.daily_calorie_goal) {
-          // User has completed onboarding in Supabase
-          setHasOnboarded(true);
-          // Also save to AsyncStorage for future checks
-          await AsyncStorage.setItem(HAS_COMPLETED_ONBOARDING_KEY, 'true');
-          return;
-        }
-      }
-
-      // Fallback to AsyncStorage check
-      const status = await AsyncStorage.getItem(HAS_COMPLETED_ONBOARDING_KEY);
-      setHasOnboarded(status === 'true');
+      // Onboarding counts as done ONLY when the user's real profile (sex, age,
+      // body metrics, goal) has been saved. The Supabase `profiles` row is
+      // auto-created on sign-up with a DEFAULT daily_calorie_goal, so it can't be
+      // the signal — relying on it skipped onboarding for every new account, and
+      // people ended up with empty profiles. Use the saved profile instead.
+      const profileRaw = await AsyncStorage.getItem(USER_PROFILE_KEY);
+      const done = !!profileRaw;
+      setHasOnboarded(done);
+      if (done) await AsyncStorage.setItem(HAS_COMPLETED_ONBOARDING_KEY, 'true');
     } catch (error) {
       logger.error('Error checking onboarding status', error);
       setHasOnboarded(false);
@@ -103,6 +104,12 @@ function AppContent() {
       logger.error('Migration error', error);
     }
   };
+
+  // A recovery deep link takes precedence over everything else: the user must
+  // set a new password before reaching the app (and before any onboarding load).
+  if (passwordRecovery) {
+    return <ResetPasswordScreen />;
+  }
 
   if (authLoading || hasOnboarded === null) {
     return (
@@ -141,10 +148,14 @@ export default Sentry.wrap(function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
-        <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}>
-          <AppContent />
-        </Sentry.ErrorBoundary>
+        <ThemeProvider>
+          <PremiumProvider>
+            <StatusBar style="dark" />
+            <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}>
+              <AppContent />
+            </Sentry.ErrorBoundary>
+          </PremiumProvider>
+        </ThemeProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

@@ -25,3 +25,9 @@ jobs:
 
       - name: Unit tests
         run: npm test -- --ci
+
+      # Dependency vulnerability scan (SCA). Informational: surfaces high/critical
+      # advisories without blocking the build on noisy transitive Expo deps.
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+        continue-on-error: true

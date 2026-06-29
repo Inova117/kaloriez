@@ -36,6 +36,7 @@ import {
     bumpUsage,
     Favorite,
 } from '../services/favoritesRepository';
+import { recallFood, rememberFood, parseFoodPhrase } from '../services/foodMemory';
 import { useAuth } from '../contexts/AuthContext';
 import { generateId } from '../utils/id';
 import { logger } from '../utils/logger';
@@ -251,8 +252,35 @@ export function TodayScreen({ pendingAdd, onPendingAddConsumed }: TodayScreenPro
                 return;
             }
             
-            const { calories, source, name, detail, options, portionGrams } = await detectCalories(sanitizedText);
             const mealType = getMealTypeFromTime();
+            const parsed = parseFoodPhrase(sanitizedText); // amount the user typed
+
+            // Personalized memory: if the user has logged this food before, reuse
+            // (and scale to the amount given) THEIR calories instead of re-asking
+            // the AI — faster, free, and it respects the value they set.
+            const remembered = user ? await recallFood(user.id, sanitizedText) : null;
+            if (remembered) {
+                const memEntry: FoodEntry = {
+                    id: generateId(),
+                    name: remembered.name,
+                    calories: remembered.calories,
+                    isFavorite: false,
+                    timestamp: currentDate,
+                    mealType,
+                    source: undefined, // the user's own value — no AI/estimate badge
+                    portionGrams: remembered.portionGrams,
+                    unitCount: remembered.unitCount,
+                };
+                setEntries(prev => [memEntry, ...prev]);
+                if (user) addEntryRemote(user.id, memEntry);
+                showReview(memEntry, 'Recordado de tus registros', undefined);
+                setProcessingState('done');
+                if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setTimeout(() => setProcessingState('idle'), 300);
+                return;
+            }
+
+            const { calories, source, name, detail, options, portionGrams } = await detectCalories(sanitizedText);
             const newEntry: FoodEntry = {
                 id: generateId(),
                 // Prefer the AI-resolved clean name (Spanish); fall back to raw text.
@@ -263,9 +291,24 @@ export function TodayScreen({ pendingAdd, onPendingAddConsumed }: TodayScreenPro
                 mealType,
                 source,
                 portionGrams,
+                unitCount: parsed.count,
             };
             setEntries(prev => [newEntry, ...prev]);
-            if (user) addEntryRemote(user.id, newEntry);
+            if (user) {
+                addEntryRemote(user.id, newEntry);
+                // Remember it (and the kcal/g + kcal/unit ratios) for next time,
+                // keyed by both the raw phrase and the AI-resolved clean name.
+                rememberFood(
+                    user.id,
+                    [sanitizedText, newEntry.name],
+                    {
+                        name: newEntry.name,
+                        calories: newEntry.calories,
+                        portionGrams: newEntry.portionGrams,
+                        unitCount: parsed.count,
+                    }
+                );
+            }
             showReview(newEntry, detail, options);
             setProcessingState('done');
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -298,7 +341,10 @@ export function TodayScreen({ pendingAdd, onPendingAddConsumed }: TodayScreenPro
                 source: s.verified ? 'verified' : 'estimate',
             }));
             setEntries(prev => [...newEntries, ...prev]);
-            if (user) newEntries.forEach(e => addEntryRemote(user.id, e));
+            if (user) newEntries.forEach(e => {
+                addEntryRemote(user.id, e);
+                rememberFood(user.id, [e.name], { name: e.name, calories: e.calories, portionGrams: e.portionGrams });
+            });
             setProcessingState('done');
             if (Platform.OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setTimeout(() => setProcessingState('idle'), 300);
@@ -374,6 +420,14 @@ export function TodayScreen({ pendingAdd, onPendingAddConsumed }: TodayScreenPro
         };
         setEntries(prev => prev.map(e => e.id === selectedEntry.id ? updated : e));
         updateEntryRemote(updated);
+        // A manual correction is the strongest signal — remember it (incl. the
+        // per-gram and, if we know the count, per-unit ratios) so this food uses
+        // the user's value next time it's logged.
+        if (user) rememberFood(
+            user.id,
+            [trimmed],
+            { name: trimmed, calories: updated.calories, portionGrams: newGrams, unitCount: selectedEntry.unitCount }
+        );
     };
 
     const handleDelete = useCallback(async () => {

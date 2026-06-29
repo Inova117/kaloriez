@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, useWindowDime
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import Svg, { Line, Circle, Text as SvgText } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchWeights, saveWeightLocal, upsertWeightRemote, WeightEntry } from '../services/weightRepository';
 
@@ -16,10 +17,21 @@ export function WeightTracker() {
     const [weightHistory, setWeightHistory] = useState<WeightEntry[]>([]);
     const [isAddingWeight, setIsAddingWeight] = useState(false);
     const [newWeight, setNewWeight] = useState('');
+    const [targetWeight, setTargetWeight] = useState<number | null>(null);
 
     useEffect(() => {
         loadWeightHistory();
     }, [user?.id]);
+
+    // Target weight (set in Profile) — drawn as a goal line on the chart.
+    useEffect(() => {
+        AsyncStorage.getItem('@target_weight')
+            .then((raw) => {
+                const w = raw ? parseFloat(raw) : NaN;
+                setTargetWeight(Number.isFinite(w) && w > 0 ? w : null);
+            })
+            .catch(() => {});
+    }, []);
 
     const loadWeightHistory = async () => {
         // Supabase is the source of truth; the repository falls back to the
@@ -69,8 +81,9 @@ export function WeightTracker() {
         }
 
         const weights = weightHistory.map(e => e.weight);
-        const minWeight = Math.min(...weights);
-        const maxWeight = Math.max(...weights);
+        const tw = targetWeight;
+        const minWeight = tw != null ? Math.min(...weights, tw) : Math.min(...weights);
+        const maxWeight = tw != null ? Math.max(...weights, tw) : Math.max(...weights);
         const weightRange = maxWeight - minWeight || 1;
 
         const padding = 40;
@@ -102,6 +115,34 @@ export function WeightTracker() {
                             />
                         );
                     })}
+
+                    {/* Target weight goal line */}
+                    {tw != null && (() => {
+                        const t = tw;
+                        const ty = padding + chartInnerHeight - ((t - minWeight) / weightRange) * chartInnerHeight;
+                        return (
+                            <React.Fragment>
+                                <Line
+                                    x1={padding}
+                                    y1={ty}
+                                    x2={CHART_WIDTH - padding}
+                                    y2={ty}
+                                    stroke={colors.favorite}
+                                    strokeWidth="2"
+                                    strokeDasharray="6 5"
+                                />
+                                <SvgText
+                                    x={CHART_WIDTH - padding}
+                                    y={ty - 6}
+                                    fontSize="11"
+                                    fill={colors.favorite}
+                                    textAnchor="end"
+                                >
+                                    {`Meta ${t} kg`}
+                                </SvgText>
+                            </React.Fragment>
+                        );
+                    })()}
 
                     {/* Weight line */}
                     {points.map((point, index) => {

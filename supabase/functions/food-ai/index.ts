@@ -202,6 +202,18 @@ function stripJsonFences(text: string): string {
     return String(text).replace(/```json/g, "").replace(/```/g, "").trim();
 }
 
+// Normalized cache key for the ai_suggestions table: trim, lowercase and
+// collapse internal whitespace so "  Tacos   Al Pastor " and "tacos al pastor"
+// share one cached result. Capped at 300 chars to match the prompt's query.slice.
+function cacheKey(raw: string): string {
+    return raw.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 300);
+}
+
+// Cached suggestions are already enriched/validated, so we can return them
+// verbatim. 30-day TTL keeps the table bounded (alongside the existing
+// cleanup_expired_suggestions cron) while sparing repeat queries a Gemini bill.
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 const SYSTEM_PROMPT =
     `Eres un experto en nutrición especializado en la cocina MEXICANA y latinoamericana. El usuario escribe (en español o inglés) lo que comió.
 
@@ -249,6 +261,24 @@ Deno.serve(async (req: Request) => {
             return jsonResponse({ suggestions: [] });
         }
 
+        // Cache lookup: identical text queries must NOT re-bill Gemini. Per-user
+        // and RLS-scoped (user.client), so one user's cache is never reachable by
+        // another. Only non-expired rows count; cached values are already enriched.
+        const key = cacheKey(query);
+        const { data: cached } = await user.client
+            .from("ai_suggestions")
+            .select("suggestions")
+            .eq("user_id", user.id)
+            .eq("query", key)
+            .gt("expires_at", new Date().toISOString())
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (cached?.suggestions) {
+            // Cache HIT: return without touching Gemini or USDA.
+            return jsonResponse({ suggestions: cached.suggestions });
+        }
+
         const ai = aiEndpoint();
         const completion = await fetch(ai.url, {
             method: "POST",
@@ -279,7 +309,25 @@ Deno.serve(async (req: Request) => {
             return jsonResponse({ suggestions: [] });
         }
 
-        return jsonResponse({ suggestions: await enrichSuggestions(parsed) });
+        const suggestions = await enrichSuggestions(parsed);
+
+        // Cache write: best-effort, only for real (non-empty) results so we never
+        // persist a "no suggestions" answer that should be retried. Relies on the
+        // UNIQUE (user_id, query) index in supabase_schema.sql for onConflict. A
+        // write failure must never break the response, so it's swallowed.
+        if (suggestions.length > 0) {
+            try {
+                const expires_at = new Date(Date.now() + CACHE_TTL_MS).toISOString();
+                await user.client.from("ai_suggestions").upsert(
+                    { user_id: user.id, query: key, suggestions, expires_at },
+                    { onConflict: "user_id,query" },
+                );
+            } catch (_e) {
+                // Non-fatal: serving the result matters more than caching it.
+            }
+        }
+
+        return jsonResponse({ suggestions });
     } catch (_e) {
         return jsonResponse({ suggestions: [], error: "internal" });
     }

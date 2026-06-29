@@ -107,36 +107,45 @@ export function EditFoodModal({ visible, entry, onSave, onClose }: EditFoodModal
                     <View style={styles.content}>
                         <Text style={styles.title}>Editar comida</Text>
 
-                        <TextInput
-                            style={styles.input}
-                            value={text}
-                            onChangeText={setText}
-                            placeholder="Nombre"
-                            placeholderTextColor={colors.textDimmed}
-                            autoFocus
-                            selectionColor={colors.accent}
-                        />
+                        <View style={styles.field}>
+                            <Text style={styles.fieldLabel}>Nombre</Text>
+                            <TextInput
+                                style={styles.controlInput}
+                                value={text}
+                                onChangeText={setText}
+                                placeholder="Nombre de la comida"
+                                placeholderTextColor={colors.textDimmed}
+                                autoFocus
+                                selectionColor={colors.accent}
+                            />
+                        </View>
 
                         <View style={styles.fieldRow}>
-                            <TextInput
-                                style={[styles.input, styles.fieldHalf]}
-                                value={grams}
-                                onChangeText={handleGramsChange}
-                                placeholder="Gramos"
-                                placeholderTextColor={colors.textDimmed}
-                                keyboardType="numeric"
-                                selectionColor={colors.accent}
-                            />
-                            <TextInput
-                                style={[styles.input, styles.fieldHalf]}
-                                value={calories}
-                                onChangeText={handleCaloriesChange}
-                                placeholder="Calorías"
-                                placeholderTextColor={colors.textDimmed}
-                                keyboardType="numeric"
-                                onSubmitEditing={handleSave}
-                                selectionColor={colors.accent}
-                            />
+                            <View style={styles.fieldCol}>
+                                <Text style={styles.fieldLabel}>Gramos</Text>
+                                <TextInput
+                                    style={styles.controlInput}
+                                    value={grams}
+                                    onChangeText={handleGramsChange}
+                                    placeholder="Opcional"
+                                    placeholderTextColor={colors.textDimmed}
+                                    keyboardType="numeric"
+                                    selectionColor={colors.accent}
+                                />
+                            </View>
+                            <View style={styles.fieldCol}>
+                                <Text style={styles.fieldLabel}>Calorías</Text>
+                                <TextInput
+                                    style={styles.controlInput}
+                                    value={calories}
+                                    onChangeText={handleCaloriesChange}
+                                    placeholder="kcal"
+                                    placeholderTextColor={colors.textDimmed}
+                                    keyboardType="numeric"
+                                    onSubmitEditing={handleSave}
+                                    selectionColor={colors.accent}
+                                />
+                            </View>
                         </View>
 
                         <View style={styles.buttons}>
@@ -187,26 +196,36 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 16,
     },
-    input: {
+    controlInput: {
         fontSize: 16,
         color: colors.textPrimary,
-        backgroundColor: colors.inputBackground, // Use theme gray
+        backgroundColor: colors.inputBackground, // theme gray
         paddingHorizontal: 12,
         paddingVertical: 10,
-        marginHorizontal: 16,
         borderRadius: 8,
-        marginBottom: 20,
         borderWidth: 1,
         borderColor: colors.cardBorder,
+    },
+    field: {
+        marginHorizontal: 16,
+        marginBottom: 16,
     },
     fieldRow: {
         flexDirection: 'row',
         gap: 12,
         marginHorizontal: 16,
+        marginBottom: 16,
     },
-    fieldHalf: {
+    fieldCol: {
         flex: 1,
-        marginHorizontal: 0,
+        minWidth: 0, // let columns shrink so inputs never overflow the modal (web)
+    },
+    fieldLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: colors.textSecondary,
+        marginBottom: 6,
+        marginLeft: 2,
     },
     buttons: {
         flexDirection: 'row',

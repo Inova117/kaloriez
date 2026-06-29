@@ -2,10 +2,11 @@
   "expo": {
     "name": "Kaloriez",
     "slug": "CalorieCounter",
+    "scheme": "kaloriez",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -43,7 +44,9 @@
           "organization": "kaloriez"
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-secure-store",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

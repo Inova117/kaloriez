@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS food_entries (
 -- Add columns to pre-existing food_entries tables (idempotent).
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS source TEXT;
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS portion_grams NUMERIC;
+-- unit_count: how many units the entry represents (e.g. 2 for "2 tacos"), so the
+-- per-user food memory can derive a per-unit calorie value and scale by count.
+ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS unit_count NUMERIC;
 
 -- quick_add_items doubles as the unified favorites store. emoji is optional
 -- (the UI no longer uses emojis) and we carry the portion through. Idempotent.
@@ -72,6 +75,8 @@ CREATE INDEX IF NOT EXISTS idx_food_entries_user_timestamp ON food_entries(user_
 CREATE INDEX IF NOT EXISTS idx_quick_add_items_user_id ON quick_add_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_suggestions_user_id ON ai_suggestions(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_suggestions_expires_at ON ai_suggestions(expires_at);
+-- Unique key for per-user cache upserts (onConflict: user_id,query)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_suggestions_user_query ON ai_suggestions(user_id, query);
 
 -- Index for weight lookups
 CREATE INDEX IF NOT EXISTS idx_weight_entries_user_id ON weight_entries(user_id);
@@ -97,6 +102,7 @@ DROP POLICY IF EXISTS "Users can update own quick add items" ON quick_add_items;
 DROP POLICY IF EXISTS "Users can delete own quick add items" ON quick_add_items;
 DROP POLICY IF EXISTS "Users can view own ai suggestions" ON ai_suggestions;
 DROP POLICY IF EXISTS "Users can insert own ai suggestions" ON ai_suggestions;
+DROP POLICY IF EXISTS "Users can update own ai suggestions" ON ai_suggestions;
 DROP POLICY IF EXISTS "Users can delete own ai suggestions" ON ai_suggestions;
 DROP POLICY IF EXISTS "Users can view own weight entries" ON weight_entries;
 DROP POLICY IF EXISTS "Users can insert own weight entries" ON weight_entries;
@@ -146,6 +152,12 @@ CREATE POLICY "Users can view own ai suggestions" ON ai_suggestions
 CREATE POLICY "Users can insert own ai suggestions" ON ai_suggestions
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- UPDATE policy lets the food-ai cache upsert refresh an expired row
+-- (ON CONFLICT (user_id, query) DO UPDATE); without it RLS silently blocks the
+-- refresh and that exact query keeps re-billing Gemini.
+CREATE POLICY "Users can update own ai suggestions" ON ai_suggestions
+    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
 CREATE POLICY "Users can delete own ai suggestions" ON ai_suggestions
     FOR DELETE USING (auth.uid() = user_id);
 
@@ -166,13 +178,15 @@ CREATE POLICY "Users can delete own weight entries" ON weight_entries
 DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 
 -- Function to automatically update updated_at timestamp
+-- search_path pinned to '' to fix function_search_path_mutable lint and
+-- prevent search_path hijacking (no relations referenced, so nothing to qualify).
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Trigger to update updated_at on profiles
 CREATE TRIGGER update_profiles_updated_at
@@ -183,6 +197,8 @@ CREATE TRIGGER update_profiles_updated_at
 -- Automatically create a profile row when a new auth user is created. Runs
 -- server-side with SECURITY DEFINER so it works regardless of email-confirmation
 -- gating and removes the need for the client to insert its own profile row.
+-- search_path pinned to '' (relations fully schema-qualified below) to fix the
+-- function_search_path_mutable lint and prevent search_path hijacking.
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -196,7 +212,7 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -205,12 +221,14 @@ CREATE TRIGGER on_auth_user_created
     EXECUTE FUNCTION handle_new_user();
 
 -- Function to clean up expired AI suggestions
+-- search_path pinned to '' (ai_suggestions schema-qualified below) to fix the
+-- function_search_path_mutable lint and prevent search_path hijacking.
 CREATE OR REPLACE FUNCTION cleanup_expired_suggestions()
 RETURNS void AS $$
 BEGIN
-    DELETE FROM ai_suggestions WHERE expires_at < NOW();
+    DELETE FROM public.ai_suggestions WHERE expires_at < NOW();
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- You can set up a cron job in Supabase to run this function periodically
 -- Example: SELECT cron.schedule('cleanup-suggestions', '0 0 * * *', 'SELECT cleanup_expired_suggestions()');

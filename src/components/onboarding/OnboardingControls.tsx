@@ -187,7 +187,11 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     bigCenter: { flexDirection: 'row', alignItems: 'baseline', minWidth: 120, justifyContent: 'center' },
-    bigInput: { ...typography.calorieCount, fontSize: 44, minWidth: 70, padding: 0 },
+    // Explicit width: on web a TextInput with no width takes the browser's
+    // default <input> size (~20 chars), which at 44px font balloons to ~590px and
+    // pushes the steppers/number off-screen. A fixed, centered width fits up to
+    // the 6-char maxLength on every platform.
+    bigInput: { ...typography.calorieCount, fontSize: 44, width: 132, padding: 0, textAlign: 'center' },
     bigUnit: { fontSize: 16, color: colors.textDimmed, marginLeft: 6 },
 
     optionRow: {

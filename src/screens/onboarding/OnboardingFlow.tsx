@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     View, Text, StyleSheet, Pressable, Animated, Easing,
-    useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView, LayoutAnimation, UIManager,
+    KeyboardAvoidingView, Platform, ScrollView, LayoutAnimation, UIManager, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +27,7 @@ import {
 } from '../../components/onboarding/OnboardingControls';
 import { PremiumPanel, PremiumPlan } from '../../components/onboarding/PremiumPanel';
 import { notify } from '../../utils/notify';
+import { MEDICAL_DISCLAIMER_URL } from '../../lib/legal';
 
 export const HAS_COMPLETED_ONBOARDING_KEY = '@has_completed_onboarding';
 export const USER_PROFILE_KEY = '@user_profile';
@@ -66,7 +67,6 @@ interface OnboardingFlowProps {
 
 export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlowProps) {
     const { user } = useAuth();
-    const { width } = useWindowDimensions();
 
     const [step, setStep] = useState(0);
     const [gender, setGender] = useState<UserProfile['gender']>('male');
@@ -79,7 +79,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [resultDisplay, setResultDisplay] = useState(0);
 
-    const translateX = useRef(new Animated.Value(0)).current;
+    const fade = useRef(new Animated.Value(1)).current;
 
     // Prefill when editing / returning.
     useEffect(() => {
@@ -108,13 +108,16 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
     }, []);
 
     useEffect(() => {
-        Animated.timing(translateX, {
-            toValue: -step * width,
-            duration: 320,
+        // Only the active step is mounted (no fixed-width track that could
+        // overflow on web); a quick fade smooths the transition.
+        fade.setValue(0);
+        Animated.timing(fade, {
+            toValue: 1,
+            duration: 220,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
         }).start();
-    }, [step, width]);
+    }, [step]);
 
     const ageNum = parseInt(age, 10);
     const weightNum = parseFloat(weight);
@@ -203,11 +206,12 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                     {step < 4 ? <ProgressDots total={TOTAL_INPUT_STEPS} index={step} /> : <View style={{ height: 6 }} />}
                 </View>
 
-                {/* Sliding panels */}
-                <View style={styles.flex}>
-                    <Animated.View style={[styles.track, { width: width * 6, transform: [{ translateX }] }]}>
+                {/* Only the active step is rendered, full-width (no carousel
+                    track), so a neighbouring panel can never bleed in. */}
+                <View style={styles.viewport}>
+                    <Animated.View style={[styles.flex, { opacity: fade }]}>
                         {/* Step 0 — Gender + Age */}
-                        <Panel width={width}>
+                        <Panel active={step === 0}>
                             <Text style={styles.title}>Hablemos de ti</Text>
                             <Text style={styles.subtitle}>Lo usamos para calcular tu metabolismo.</Text>
                             <View style={styles.block}>
@@ -226,7 +230,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                         </Panel>
 
                         {/* Step 1 — Weight + Height */}
-                        <Panel width={width}>
+                        <Panel active={step === 1}>
                             <Text style={styles.title}>Tus medidas</Text>
                             <Text style={styles.subtitle}>Con esto calculamos tu gasto de energía.</Text>
                             <View style={styles.block}>
@@ -243,7 +247,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                         </Panel>
 
                         {/* Step 2 — Activity */}
-                        <Panel width={width}>
+                        <Panel active={step === 2}>
                             <Text style={styles.title}>¿Qué tan activo eres?</Text>
                             <Text style={styles.subtitle}>Cuenta tu actividad típica, no el ejercicio de hoy.</Text>
                             <View style={styles.block}>
@@ -261,7 +265,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                         </Panel>
 
                         {/* Step 3 — Goal + pace */}
-                        <Panel width={width}>
+                        <Panel active={step === 3}>
                             <Text style={styles.title}>¿Cuál es tu objetivo?</Text>
                             <Text style={styles.subtitle}>Ajusta el ritmo y mira cómo cambia tu meta.</Text>
                             <View style={styles.block}>
@@ -303,7 +307,7 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                         </Panel>
 
                         {/* Step 4 — Result */}
-                        <Panel width={width}>
+                        <Panel active={step === 4}>
                             <ScrollView contentContainerStyle={styles.resultScroll} showsVerticalScrollIndicator={false}>
                                 <Text style={styles.eyebrow}>TU META DIARIA</Text>
                                 <View style={styles.resultNumberRow}>
@@ -344,11 +348,20 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
                                         A este ritmo, {direction === 'lose' ? 'bajarás' : 'subirás'} ~{Math.abs(getKgPerWeek(weightGoal)).toFixed(2)} kg por semana.
                                     </Text>
                                 )}
+                                <Text style={[styles.method, { marginTop: 18, lineHeight: 18, paddingHorizontal: 8 }]}>
+                                    Es una estimación informativa, no consejo médico. Consulta a un profesional de salud antes de cambiar tu alimentación.{' '}
+                                    <Text
+                                        style={{ color: colors.accent, textDecorationLine: 'underline' }}
+                                        onPress={() => Linking.openURL(MEDICAL_DISCLAIMER_URL)}
+                                    >
+                                        Aviso médico
+                                    </Text>
+                                </Text>
                             </ScrollView>
                         </Panel>
 
                         {/* Step 5 — Premium (gentle, transparent paywall) */}
-                        <Panel width={width}>
+                        <Panel active={step === 5}>
                             <PremiumPanel
                                 onChoosePlan={(plan: PremiumPlan) => {
                                     notify(
@@ -388,8 +401,9 @@ export function OnboardingFlow({ onComplete, isEditing = false }: OnboardingFlow
     );
 }
 
-function Panel({ width, children }: { width: number; children: React.ReactNode }) {
-    return <View style={[styles.panel, { width }]}>{children}</View>;
+function Panel({ active, children }: { active: boolean; children: React.ReactNode }) {
+    if (!active) return null;
+    return <View style={styles.panel}>{children}</View>;
 }
 
 function BreakdownRow({ label, value, signed }: { label: string; value: number; signed?: boolean }) {
@@ -405,6 +419,7 @@ function BreakdownRow({ label, value, signed }: { label: string; value: number; 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
+    viewport: { flex: 1, overflow: 'hidden' },
     topBar: { paddingTop: 12, paddingBottom: 8, alignItems: 'center', justifyContent: 'center' },
     closeX: { position: 'absolute', left: 16, top: 8, zIndex: 10, padding: 4 },
     track: { flexDirection: 'row', flex: 1 },

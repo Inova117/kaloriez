@@ -37,6 +37,7 @@ function mapRow(row: any): FoodEntry {
         timestamp: new Date(row.timestamp),
         source: row.source ?? undefined,
         portionGrams: row.portion_grams ?? undefined,
+        unitCount: row.unit_count ?? undefined,
     };
 }
 
@@ -111,6 +112,7 @@ export async function addEntryRemote(userId: string, entry: FoodEntry): Promise<
             timestamp: new Date(entry.timestamp).toISOString(),
             source: entry.source ?? null,
             portion_grams: entry.portionGrams ?? null,
+            unit_count: entry.unitCount ?? null,
         },
     });
 }
@@ -126,6 +128,7 @@ export async function updateEntryRemote(entry: FoodEntry): Promise<void> {
             is_favorite: entry.isFavorite ?? false,
             source: entry.source ?? null,
             portion_grams: entry.portionGrams ?? null,
+            unit_count: entry.unitCount ?? null,
         },
     });
 }

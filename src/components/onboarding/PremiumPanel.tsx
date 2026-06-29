@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../../lib/legal';
 
 export type PremiumPlan = 'annual' | 'monthly';
 
@@ -101,7 +102,19 @@ export function PremiumPanel({
                 <Text style={styles.skipText}>Continuar gratis</Text>
             </Pressable>
 
-            <Text style={styles.fine}>Cancela cuando quieras · Sin cargos sorpresa</Text>
+            <Text style={styles.fine}>
+                Suscripción de renovación automática: se renueva al mismo precio hasta que la canceles,
+                desde los ajustes de tu cuenta. Cancela cuando quieras · sin cargos sorpresa.
+            </Text>
+            <View style={styles.legalRow}>
+                <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8} accessibilityRole="link">
+                    <Text style={styles.legalLink}>Términos</Text>
+                </Pressable>
+                <Text style={styles.legalSep}>·</Text>
+                <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} hitSlop={8} accessibilityRole="link">
+                    <Text style={styles.legalLink}>Aviso de privacidad</Text>
+                </Pressable>
+            </View>
         </ScrollView>
     );
 }
@@ -150,4 +163,7 @@ const styles = StyleSheet.create({
     skip: { paddingVertical: 14, alignItems: 'center', marginTop: 2 },
     skipText: { fontSize: 15, color: colors.textMuted },
     fine: { fontSize: 12, color: colors.textDimmed, textAlign: 'center', marginTop: 4 },
+    legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 8 },
+    legalLink: { fontSize: 12, color: colors.accent, textDecorationLine: 'underline' },
+    legalSep: { fontSize: 12, color: colors.textDimmed },
 });

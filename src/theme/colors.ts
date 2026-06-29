@@ -3,6 +3,11 @@
 // Core: Sage Green #7B896F
 // Backgrounds: Warm off-whites, cream, paper tones (NO pure white)
 
+import { Appearance, Platform } from 'react-native';
+
+export const THEME_PREF_KEY = '@theme_pref';
+export type ThemePref = 'system' | 'light' | 'dark';
+
 export const palette = {
     // Warm Neutrals (NO pure white)
     cream: '#FAF8F5',        // Warm off-white background
@@ -27,7 +32,17 @@ export const palette = {
     softAmber: '#E5C9A1',    // Warning - soft pastel amber
 } as const;
 
-export const colors = {
+interface ThemeColors {
+    background: string; cardBackground: string; cardBorder: string; inputBackground: string;
+    textPrimary: string; textSecondary: string; textMuted: string; textDimmed: string; textInverse: string;
+    accent: string; accentSubtle: string; accentHighlight: string;
+    favorite: string; success: string; error: string; warning: string;
+    mealBreakfast: string; mealLunch: string; mealDinner: string; mealSnacks: string;
+    ghostBorder: string; ghostBorderHover: string;
+    sage: string; sageDark: string; sageLight: string;
+}
+
+const lightColors: ThemeColors = {
     // 1. Base Layer (Warm & Cozy)
     background: palette.cream,        // Warm off-white, never pure white
 
@@ -68,6 +83,52 @@ export const colors = {
     sage: palette.sage,
     sageDark: palette.sageDark,
     sageLight: palette.sageLight,
-} as const;
+};
 
-export type ColorKey = keyof typeof colors;
+// Warm DARK palette — same keys so every screen themes correctly without
+// touching component styles. Deep sage-greys instead of cream, light text,
+// a slightly brighter sage accent for contrast on dark surfaces.
+const darkColors: ThemeColors = {
+    background: '#1B1E1A',
+    cardBackground: '#262B24',
+    cardBorder: 'rgba(168, 197, 160, 0.16)',
+    inputBackground: '#2F352D',
+    textPrimary: '#ECEFE9',
+    textSecondary: '#BBC4B6',
+    textMuted: '#8E988B',
+    textDimmed: '#6F786D',
+    textInverse: '#1B1E1A',
+    accent: '#9DB390',
+    accentSubtle: 'rgba(157, 179, 144, 0.14)',
+    accentHighlight: '#B7C9AC',
+    favorite: '#E5C9A1',
+    success: '#A8C5A0',
+    error: '#D4A5A5',
+    warning: '#E5C9A1',
+    mealBreakfast: '#B8A88A',
+    mealLunch: '#8FA882',
+    mealDinner: '#9DB390',
+    mealSnacks: '#A8C5A0',
+    ghostBorder: 'rgba(255, 255, 255, 0.08)',
+    ghostBorderHover: 'rgba(255, 255, 255, 0.14)',
+    sage: palette.sage,
+    sageDark: palette.sageDark,
+    sageLight: palette.sageLight,
+};
+
+// Resolve the active scheme once at startup. On web a user override is stored in
+// localStorage (readable synchronously here), and the ThemeContext reloads the
+// page to re-resolve — so the in-app toggle works instantly on web. On native we
+// follow the OS at launch (a live in-app override would require threading a theme
+// context through every screen's static StyleSheet).
+function resolveScheme(): 'light' | 'dark' {
+    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+        const p = localStorage.getItem(THEME_PREF_KEY);
+        if (p === 'light' || p === 'dark') return p;
+    }
+    return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+}
+
+export const colors: ThemeColors = resolveScheme() === 'dark' ? darkColors : lightColors;
+
+export type ColorKey = keyof ThemeColors;
