@@ -5,8 +5,17 @@
 
 ## Veredicto
 
-- **Lanzar como app GRATIS:** casi listo (faltan formularios de App Store Connect + 3 arreglos de código menores).
-- **Vender SUSCRIPCIÓN:** **NO** listo — 7 blockers (no hay IAP integrado y el paywall enseña precios pero no cobra).
+- **Lanzar como app GRATIS:** casi listo. **Decisión tomada: gratis primero.** Los arreglos de
+  código y la neutralización del paywall **ya están hechos** (commit `ff24037`). Lo que falta son
+  los **formularios de App Store Connect** (App Privacy, Age Rating, URLs) + tu cuenta Apple Developer.
+- **Vender SUSCRIPCIÓN (más adelante):** los 7 blockers de IAP/cuenta siguen pendientes para cuando
+  decidas monetizar dentro de la app.
+
+### ✅ Hecho en esta sesión (gratis primero)
+- Consentimiento de Términos/Privacidad en el registro (`AuthScreen`).
+- `ITSAppUsesNonExemptEncryption=false` en `app.json` (export compliance).
+- Permiso de micrófono en español.
+- Paywall neutralizado: `PremiumPanel` ahora es pantalla "todo gratis", sin precios ni botón de compra.
 
 ---
 
