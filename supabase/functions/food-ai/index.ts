@@ -34,7 +34,7 @@ function aiEndpoint(): { url: string; headers: Record<string, string>; model: st
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                "HTTP-Referer": "https://kaloriez.app",
+                "HTTP-Referer": "https://kaloriez.dev",
                 "X-Title": "Kaloriez",
             },
             model: OPENROUTER_MODEL,

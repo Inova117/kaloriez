@@ -26,7 +26,7 @@ Se publican solos en Netlify (están dentro de `landing/`, que es el publish dir
 3. **Domicilio fiscal/legal** completo.
 4. **Ciudad y entidad de jurisdicción** para los Términos (ej. “Ciudad de México”).
 5. **Precio de renovación** de la suscripción fundador de Stripe (hoy dice “precio normal” sin cifra).
-6. Crea y atiende los correos: **soporte@kaloriez.app** y **privacidad@kaloriez.app**.
+6. Crea y atiende los correos: **soporte@kaloriez.dev** y **privacidad@kaloriez.dev**.
 7. Confirma la **fecha de vigencia** (puse 28 de junio de 2026 en todas).
 
 ## 3. Escudos de responsabilidad incluidos (lo que te protege)
@@ -68,7 +68,7 @@ Sentry, Stripe.
    Hoy no los muestra → Apple 3.1.2 y Google lo rechazarían.
 3. **Publica las URLs** y ponlas en App Store Connect y Play Console: Privacidad, Soporte, y (Google)
    **eliminación de datos**. Hoy `PRIVACY_POLICY_URL` en `ProfileScreen.tsx` es placeholder
-   `https://kaloriez.app/privacy` → cámbialo a la URL real publicada y agrega el enlace a Términos.
+   `https://kaloriez.dev/privacy` → cámbialo a la URL real publicada y agrega el enlace a Términos.
 4. **Disclaimer médico dentro de la app** (no solo en la web): un aviso breve visible (onboarding o
    ajustes) que enlace a `/legal/aviso-medico.html`. Apple 1.4.1. **Es el escudo más importante de una
    app de salud:** un aviso que el usuario nunca vio tiene poco peso ante una demanda. Prioridad alta.

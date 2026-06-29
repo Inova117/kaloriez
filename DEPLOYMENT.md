@@ -79,7 +79,7 @@ must be assumed public:
 
 - ✅ Account deletion (implemented — Profile → Delete Account).
 - 🔶 Privacy Policy link added in Profile → About, but it points to the
-  placeholder `PRIVACY_POLICY_URL` (`https://kaloriez.app/privacy`) in
+  placeholder `PRIVACY_POLICY_URL` (`https://kaloriez.dev/privacy`) in
   `src/screens/ProfileScreen.tsx`. **Host a real policy and update that URL**
   before submission, and add the same URL to the store listings.
 - ⬜ Data-safety / privacy nutrition labels disclosing Sentry + health data.

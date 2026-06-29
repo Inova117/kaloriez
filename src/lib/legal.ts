@@ -2,8 +2,8 @@
 //
 // IMPORTANT: LEGAL_BASE_URL must match the domain where the landing is actually
 // deployed BEFORE submitting to the App Store / Google Play. If you publish on a
-// Netlify subdomain instead of kaloriez.app, update this value.
-export const LEGAL_BASE_URL = 'https://kaloriez.app/legal';
+// Netlify subdomain instead of kaloriez.dev, update this value.
+export const LEGAL_BASE_URL = 'https://kaloriez.dev/legal';
 
 export const PRIVACY_POLICY_URL = `${LEGAL_BASE_URL}/privacidad.html`;
 export const TERMS_URL = `${LEGAL_BASE_URL}/terminos.html`;
